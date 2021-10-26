@@ -42,7 +42,7 @@ func (m *Manager) GetVms(extraArgs ...Arguments) (vms []*Vm, err error) {
 			vms[i].Ports[x].manager = m
 		}
 		for x := range vms[i].Disks {
-			vms[i].Ports[x].manager = m
+			vms[i].Disks[x].manager = m
 		}
 		vms[i].Vdc.manager = m
 		if vms[i].Floating != nil {
