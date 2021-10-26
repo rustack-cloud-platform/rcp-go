@@ -3,19 +3,23 @@ package rustack
 import "fmt"
 
 type Vm struct {
-	manager  *Manager
-	ID       string        `json:"id"`
-	Name     string        `json:"name"`
-	Cpu      int           `json:"cpu"`
-	Ram      int           `json:"ram"`
-	Power    bool          `json:"power"`
-	Vdc      *Vdc          `json:"vdc"`
-	Template *Template     `json:"template"`
-	Metadata []*VmMetadata `json:"metadata"`
-	UserData *string       `json:"user_data"`
-	Ports    []*Port       `json:"ports"`
-	Disks    []*Disk       `json:"disks"`
-	Floating *Port         `json:"floating"`
+	manager    *Manager
+	ID         string        `json:"id"`
+	Name       string        `json:"name"`
+	Cpu        int           `json:"cpu"`
+	Ram        int           `json:"ram"`
+	Power      bool          `json:"power"`
+	Vdc        *Vdc          `json:"vdc"`
+	Template   *Template     `json:"template"`
+	Metadata   []*VmMetadata `json:"metadata"`
+	UserData   *string       `json:"user_data"`
+	Ports      []*Port       `json:"ports"`
+	Disks      []*Disk       `json:"disks"`
+	Floating   *Port         `json:"floating"`
+	Kubernetes *struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"kubernetes,omitempty"`
 }
 
 func NewVm(name string, cpu, ram int, template *Template, metadata []*VmMetadata, userData *string, ports []*Port, disks []*Disk, floating *string) Vm {

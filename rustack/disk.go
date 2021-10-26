@@ -38,7 +38,7 @@ func (v *Vdc) GetDisks(extraArgs ...Arguments) (disks []*Disk, err error) {
 }
 
 func (m *Manager) GetDisk(id string) (disk *Disk, err error) {
-	path := fmt.Sprintf("v1/router/%s", id)
+	path := fmt.Sprintf("v1/disk/%s", id)
 	err = m.Get(path, Defaults(), &disk)
 	if err != nil {
 		return
