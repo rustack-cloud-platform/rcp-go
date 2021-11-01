@@ -14,6 +14,9 @@ import (
 )
 
 const DefaultBaseURL = "https://cp.sbcloud.ru"
+const RetryTime = 500    // ms
+const LockTimeout = 1200 // seconds
+const TaskTimeout = 600  // seconds
 
 type Manager struct {
 	Client    *http.Client
@@ -137,7 +140,7 @@ func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 	req.Header.Set("Content-Type", "application/json")
 
 	taskIds, err := m.do(req, url, target)
-	m.waitTasks(taskIds, 600)
+	m.waitTasks(taskIds)
 
 	return err
 }
@@ -159,7 +162,7 @@ func (m *Manager) Post(path string, args interface{}, target interface{}) error 
 	req.Header.Set("Content-Type", "application/json")
 
 	taskIds, err := m.do(req, url, target)
-	m.waitTasks(taskIds, 600)
+	m.waitTasks(taskIds)
 
 	return err
 }
@@ -177,7 +180,7 @@ func (m *Manager) Delete(path string, args Arguments, target interface{}) error 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 
 	taskIds, err := m.do(req, url, target)
-	m.waitTasks(taskIds, 600)
+	m.waitTasks(taskIds)
 
 	return err
 }
@@ -188,60 +191,84 @@ func (m *Manager) log(format string, args ...interface{}) {
 	}
 }
 
-func (m *Manager) do(req *http.Request, url string, target interface{}) (taskIds string, err error) {
-	taskIds = ""
+func (m *Manager) do(req *http.Request, url string, target interface{}) (string, error) {
 	req.Header.Set("Accept-Language", "ru-ru")
 
-	resp, err := m.Client.Do(req)
-	if err != nil {
-		err = errors.Wrapf(err, "HTTP request failure on %s", url)
-		return
+	start := time.Now()
+	var resp *http.Response
+
+	for {
+		m.log("[rustack] Perform '%s' to '%s'...", req.Method, url)
+
+		resp_, err := m.Client.Do(req)
+		if err != nil {
+			return "", errors.Wrapf(err, "HTTP request failure on %s", url)
+		}
+		defer resp_.Body.Close()
+
+		if resp_.StatusCode == 409 {
+			m.log("[rustack] Object '%s' locked. Try again in %dms...", url, RetryTime)
+
+			time.Sleep(RetryTime * time.Millisecond)
+
+			elapsedTime := time.Since(start)
+
+			if elapsedTime.Seconds() > float64(LockTimeout) {
+				m.log("[rustack] Waiting unlock for '%s' took more than %ds", url, LockTimeout)
+				return "", errors.New("Lock timeout")
+			}
+
+			continue // try again
+		}
+
+		resp = resp_
+		break
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		err = makeHTTPClientError(url, resp)
-		return
+		m.log("[rustack] Error response %d on '%s'", resp.StatusCode, url)
+		return "", makeHTTPClientError(url, resp)
+	} else {
+		m.log("[rustack] Success response on '%s'", url)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err = errors.Wrapf(err, "HTTP Read error on response for %s", url)
-		return
+		return "", errors.Wrapf(err, "HTTP Read error on response for %s", url)
 	}
 
 	// task waiter
-	taskIds = resp.Header.Get("X-Esu-Tasks")
+	taskIds := resp.Header.Get("X-Esu-Tasks")
 	if taskIds != "" {
-		m.log("[rustack] Tasks IDS %s", taskIds)
+		m.log("[rustack] Tasks IDS: %s", taskIds)
 	}
 
 	if len(b) == 0 {
-		return
+		return taskIds, nil
 	}
 
 	if target == nil {
 		// Don't try to unmarshall in case target is nil
-		return
+		return taskIds, nil
 	}
 
 	err = json.Unmarshal(b, target)
 
 	if err != nil {
-		err = errors.Wrapf(err, "JSON decode failed on %s:\n%s", url, string(b))
-		return
+		return "", errors.Wrapf(err, "JSON decode failed on %s:\n%s", url, string(b))
 	}
 
-	return
+	return taskIds, nil
 }
 
-func (m *Manager) waitTasks(taskIds string, timeout int) error {
+func (m *Manager) waitTasks(taskIds string) error {
 	for _, taskId := range strings.Split(taskIds, ",") {
 		taskId := strings.TrimSpace(taskId)
 		if taskId == "" {
 			continue
 		}
 
-		m.log("[rustack] Start waiting task %s", taskId)
+		m.log("[rustack] Start waiting task %s...", taskId)
 		path := fmt.Sprintf("v1/job/%s", taskId)
 		start := time.Now()
 
@@ -252,12 +279,12 @@ func (m *Manager) waitTasks(taskIds string, timeout int) error {
 				break
 			}
 
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(RetryTime * time.Millisecond)
 
 			elapsedTime := time.Since(start)
 
-			if elapsedTime.Seconds() > float64(timeout) {
-				m.log("[rustack] Waiting task %s took more than %s", taskId, timeout)
+			if elapsedTime.Seconds() > float64(TaskTimeout) {
+				m.log("[rustack] Waiting task %s took more than %ds", taskId, TaskTimeout)
 				return errors.New("Task timeout")
 			}
 		}

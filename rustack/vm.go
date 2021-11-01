@@ -3,20 +3,22 @@ package rustack
 import "fmt"
 
 type Vm struct {
-	manager    *Manager
-	ID         string        `json:"id"`
-	Name       string        `json:"name"`
-	Cpu        int           `json:"cpu"`
-	Ram        int           `json:"ram"`
-	Power      bool          `json:"power"`
-	Vdc        *Vdc          `json:"vdc"`
-	Template   *Template     `json:"template"`
-	Metadata   []*VmMetadata `json:"metadata"`
-	UserData   *string       `json:"user_data"`
-	Ports      []*Port       `json:"ports"`
-	Disks      []*Disk       `json:"disks"`
-	Floating   *Port         `json:"floating"`
-	Kubernetes *struct {
+	manager     *Manager
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Cpu         int           `json:"cpu"`
+	Ram         int           `json:"ram"`
+	Power       bool          `json:"power"`
+	Vdc         *Vdc          `json:"vdc"`
+	HotAdd      bool          `json:"hotadd_feature"`
+	Template    *Template     `json:"template"`
+	Metadata    []*VmMetadata `json:"metadata"`
+	UserData    *string       `json:"user_data"`
+	Ports       []*Port       `json:"ports"`
+	Disks       []*Disk       `json:"disks"`
+	Floating    *Port         `json:"floating"`
+	Kubernetes  *struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"kubernetes,omitempty"`
@@ -68,7 +70,39 @@ func (m *Manager) GetVm(id string) (vm *Vm, err error) {
 		return
 	}
 	vm.manager = m
+	for x := range vm.Ports {
+		vm.Ports[x].manager = m
+	}
+	for x := range vm.Disks {
+		vm.Disks[x].manager = m
+	}
+	vm.Vdc.manager = m
+	if vm.Floating != nil {
+		vm.Floating.manager = m
+	}
 	return
+}
+
+func (v *Vm) Reload() error {
+	m := v.manager
+	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	if err := m.Get(path, Defaults(), &v); err != nil {
+		return err
+	}
+
+	v.manager = m
+	for x := range v.Ports {
+		v.Ports[x].manager = m
+	}
+	for x := range v.Disks {
+		v.Disks[x].manager = m
+	}
+	v.Vdc.manager = m
+	if v.Floating != nil {
+		v.Floating.manager = m
+	}
+
+	return nil
 }
 
 func (v *Vm) AddPort(port *Port) error {
@@ -96,6 +130,59 @@ func (v *Vm) AddPort(port *Port) error {
 	}
 
 	return err
+}
+
+func (v *Vm) Update() error {
+	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	args := &struct {
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Cpu         int     `json:"cpu"`
+		Ram         int     `json:"ram"`
+		HotAdd      bool    `json:"hotadd_feature"`
+		Floating    *string `json:"floating"`
+	}{
+		Name:        v.Name,
+		Description: v.Description,
+		Cpu:         v.Cpu,
+		Ram:         v.Ram,
+		HotAdd:      v.HotAdd,
+		Floating:    nil,
+	}
+
+	if v.Floating != nil {
+		if v.Floating.ID != "" {
+			args.Floating = &v.Floating.ID
+		} else {
+			args.Floating = v.Floating.IpAddress
+		}
+	}
+
+	return v.manager.Put(path, args, v)
+}
+
+func (v *Vm) updateState(state string) error {
+	path := fmt.Sprintf("v1/vm/%s/state", v.ID)
+
+	args := &struct {
+		State string `json:"state"`
+	}{
+		State: state,
+	}
+
+	return v.manager.Post(path, args, v)
+}
+
+func (v *Vm) PowerOn() error {
+	return v.updateState("power_on")
+}
+
+func (v *Vm) Reboot() error {
+	return v.updateState("reboot")
+}
+
+func (v *Vm) PowerOff() error {
+	return v.updateState("power_off")
 }
 
 func (v *Vm) Delete() error {

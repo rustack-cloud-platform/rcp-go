@@ -1,5 +1,7 @@
 package rustack
 
+import "fmt"
+
 type Template struct {
 	manager *Manager
 	ID      string `json:"id"`
@@ -7,6 +9,16 @@ type Template struct {
 	MinCpu  int    `json:"min_cpu"`
 	MinRam  int    `json:"min_ram"`
 	MinHdd  int    `json:"min_hdd"`
+}
+
+func (m *Manager) GetTemplate(id string) (template *Template, err error) {
+	path := fmt.Sprintf("v1/template/%s", id)
+	err = m.Get(path, Defaults(), &template)
+	if err != nil {
+		return
+	}
+	template.manager = m
+	return
 }
 
 func (v *Vdc) GetTemplates() (templates []*Template, err error) {

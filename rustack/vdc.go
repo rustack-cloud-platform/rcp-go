@@ -204,15 +204,22 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 
 func (v *Vdc) CreateDisk(disk *Disk) error {
 	args := &struct {
-		Name           string `json:"name"`
-		Vdc            string `json:"vdc"`
-		Size           int    `json:"size"`
-		StorageProfile string `json:"storage_profile"`
+		Name           string  `json:"name"`
+		Vdc            *string `json:"vdc,omitempty"`
+		Vm             *string `json:"vm,omitempty"`
+		Size           int     `json:"size"`
+		StorageProfile string  `json:"storage_profile"`
 	}{
 		Name:           disk.Name,
-		Vdc:            v.ID,
+		Vdc:            &v.ID,
+		Vm:             nil,
 		Size:           disk.Size,
 		StorageProfile: disk.StorageProfile.ID,
+	}
+
+	if disk.Vm != nil {
+		args.Vm = &disk.Vm.ID
+		args.Vdc = nil
 	}
 
 	err := v.manager.Post("v1/disk", args, &disk)
