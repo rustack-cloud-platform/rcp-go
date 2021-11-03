@@ -129,7 +129,7 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 
 	tempPorts := make([]*TempPortCreate, len(vm.Ports))
 	for idx := range vm.Ports {
-		var fwTemplates []*string
+		var fwTemplates = make([]*string, 0)
 		for _, fwTemplate := range vm.Ports[idx].FirewallTemplates {
 			fwTemplates = append(fwTemplates, &fwTemplate.ID)
 		}

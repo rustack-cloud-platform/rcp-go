@@ -33,7 +33,7 @@ func (v *Vdc) GetPorts(extraArgs ...Arguments) (ports []*Port, err error) {
 func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 	path := fmt.Sprintf("v1/port/%s", p.ID)
 
-	var fwTemplates []*string
+	var fwTemplates = make([]*string, 0)
 	for _, fwTemplate := range firewallTemplates {
 		fwTemplates = append(fwTemplates, &fwTemplate.ID)
 	}
