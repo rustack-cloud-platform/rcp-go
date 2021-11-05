@@ -139,6 +139,8 @@ func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 	req.Header.Set("Content-Type", "application/json")
 
+	req = req.WithContext(m.ctx)
+
 	taskIds, err := m.do(req, url, target)
 	m.waitTasks(taskIds)
 
@@ -160,6 +162,8 @@ func (m *Manager) Post(path string, args interface{}, target interface{}) error 
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 	req.Header.Set("Content-Type", "application/json")
+
+	req = req.WithContext(m.ctx)
 
 	taskIds, err := m.do(req, url, target)
 	m.waitTasks(taskIds)

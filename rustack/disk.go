@@ -6,6 +6,7 @@ type Disk struct {
 	manager        *Manager
 	ID             string          `json:"id"`
 	Name           string          `json:"name"`
+	Scsi           string          `json:"scsi"`
 	Size           int             `json:"size"`
 	Vm             *Vm             `json:"vm"`
 	StorageProfile *StorageProfile `json:"storage_profile"`
