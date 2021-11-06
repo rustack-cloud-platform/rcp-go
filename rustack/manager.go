@@ -41,6 +41,12 @@ func NewManager(token string) *Manager {
 	}
 }
 
+func (m *Manager) WithContext(ctx context.Context) *Manager {
+	newManager := *m
+	newManager.ctx = ctx
+	return &newManager
+}
+
 func (m *Manager) Get(path string, args Arguments, target interface{}) error {
 	m.log("[rustack] GET %s", path)
 
