@@ -132,6 +132,10 @@ func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 	m.log("[rustack] PUT %s", path)
 
 	res, err := json.Marshal(args)
+	if err != nil {
+		return err
+	}
+
 	m.log("[rustack] Send %s", res)
 
 	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
@@ -157,6 +161,10 @@ func (m *Manager) Post(path string, args interface{}, target interface{}) error 
 	m.log("[rustack] POST %s", path)
 
 	res, err := json.Marshal(args)
+	if err != nil {
+		return err
+	}
+
 	m.log("[rustack] Send %s", res)
 
 	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
@@ -195,10 +203,50 @@ func (m *Manager) Delete(path string, args Arguments, target interface{}) error 
 	return err
 }
 
+func (m *Manager) WaitTask(taskId string) error {
+	m.log("[rustack] Start waiting task %s...", taskId)
+
+	path := fmt.Sprintf("v1/job/%s", taskId)
+	start := time.Now()
+
+	for {
+		err := m.Get(path, Arguments{}, nil)
+
+		if err != nil {
+			break
+		}
+
+		if err := m.sleep(RetryTime * time.Millisecond); err != nil {
+			return err
+		}
+
+		elapsedTime := time.Since(start)
+
+		if elapsedTime.Seconds() > float64(TaskTimeout) {
+			m.log("[rustack] Waiting task %s took more than %ds", taskId, TaskTimeout)
+			return errors.New("Task timeout")
+		}
+	}
+
+	m.log("[rustack] End waiting task %s", taskId)
+
+	return nil
+}
+
 func (m *Manager) log(format string, args ...interface{}) {
 	if m.Logger != nil {
 		m.Logger.Debugf(format, args...)
 	}
+}
+
+func (m *Manager) sleep(dur time.Duration) error {
+	if m.ctx != nil {
+		return SleepWithContext(m.ctx, dur)
+	} else {
+		time.Sleep(dur)
+	}
+
+	return nil
 }
 
 func (m *Manager) do(req *http.Request, url string, target interface{}) (string, error) {
@@ -208,7 +256,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}) (string,
 	var resp *http.Response
 
 	for {
-		m.log("[rustack] Perform '%s' to '%s'...", req.Method, url)
+		m.log("[rustack] Perform %s...", req.Method)
 
 		resp_, err := m.Client.Do(req)
 		if err != nil {
@@ -219,7 +267,9 @@ func (m *Manager) do(req *http.Request, url string, target interface{}) (string,
 		if resp_.StatusCode == 409 {
 			m.log("[rustack] Object '%s' locked. Try again in %dms...", url, RetryTime)
 
-			time.Sleep(RetryTime * time.Millisecond)
+			if err := m.sleep(RetryTime * time.Millisecond); err != nil {
+				return "", err
+			}
 
 			elapsedTime := time.Since(start)
 
@@ -278,27 +328,9 @@ func (m *Manager) waitTasks(taskIds string) error {
 			continue
 		}
 
-		m.log("[rustack] Start waiting task %s...", taskId)
-		path := fmt.Sprintf("v1/job/%s", taskId)
-		start := time.Now()
-
-		for {
-			err := m.Get(path, Arguments{}, nil)
-
-			if err != nil {
-				break
-			}
-
-			time.Sleep(RetryTime * time.Millisecond)
-
-			elapsedTime := time.Since(start)
-
-			if elapsedTime.Seconds() > float64(TaskTimeout) {
-				m.log("[rustack] Waiting task %s took more than %ds", taskId, TaskTimeout)
-				return errors.New("Task timeout")
-			}
+		if err := m.WaitTask(taskId); err != nil {
+			return err
 		}
-		m.log("[rustack] End waiting task %s", taskId)
 	}
 
 	return nil
