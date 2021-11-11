@@ -6,19 +6,21 @@ import (
 	"net/http"
 )
 
-type httpClientError struct {
+type RustackApiError struct {
 	msg  string
 	code int
 }
 
-func makeHTTPClientError(url string, resp *http.Response) error {
+func NewRustackApiError(url string, resp *http.Response) error {
 	body, _ := ioutil.ReadAll(resp.Body)
 	msg := fmt.Sprintf("HTTP request failure on %s:\n%d: %s", url, resp.StatusCode, string(body))
 
-	return &httpClientError{
+	return &RustackApiError{
 		msg:  msg,
 		code: resp.StatusCode,
 	}
 }
 
-func (e *httpClientError) Error() string { return e.msg }
+func (e *RustackApiError) Error() string   { return e.msg }
+func (e *RustackApiError) Message() string { return e.msg }
+func (e *RustackApiError) Code() int       { return e.code }

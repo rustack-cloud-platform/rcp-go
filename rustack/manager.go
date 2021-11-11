@@ -287,7 +287,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}) (string,
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		m.log("[rustack] Error response %d on '%s'", resp.StatusCode, url)
-		return "", makeHTTPClientError(url, resp)
+		return "", NewRustackApiError(url, resp)
 	} else {
 		m.log("[rustack] Success response on '%s'", url)
 	}

@@ -10,6 +10,7 @@ type Disk struct {
 	Size           int             `json:"size"`
 	Vm             *Vm             `json:"vm"`
 	StorageProfile *StorageProfile `json:"storage_profile"`
+	Locked         bool            `json:"locked,omitempty"`
 }
 
 func NewDisk(name string, size int, storageProfile *StorageProfile) Disk {

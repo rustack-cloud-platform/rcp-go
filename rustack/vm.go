@@ -18,6 +18,7 @@ type Vm struct {
 	Ports       []*Port       `json:"ports"`
 	Disks       []*Disk       `json:"disks"`
 	Floating    *Port         `json:"floating"`
+	Locked      bool          `json:"locked,omitempty"`
 	Kubernetes  *struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
