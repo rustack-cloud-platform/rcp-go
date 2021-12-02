@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Vm struct {
 	manager     *Manager
@@ -189,4 +192,19 @@ func (v *Vm) PowerOff() error {
 func (v *Vm) Delete() error {
 	path := fmt.Sprintf("v1/vm/%s", v.ID)
 	return v.manager.Delete(path, Defaults(), v)
+}
+
+func (v Vm) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	for {
+		err = v.manager.Get(path, Defaults(), &v)
+		if err != nil {
+			return
+		}
+		if !v.Locked {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return
 }

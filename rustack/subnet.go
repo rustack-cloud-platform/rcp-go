@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type SubnetDNSServer struct {
 	DNSServer string `json:"dns_server"`
@@ -20,6 +23,7 @@ type Subnet struct {
 	StartIp string `json:"start_ip"`
 	EndIp   string `json:"end_ip"`
 	IsDHCP  bool   `json:"enable_dhcp"`
+	Locked  bool   `json:"locked"`
 
 	DnsServers   []*SubnetDNSServer `json:"dns_servers"`
 	SubnetRoutes []*SubnetRoute     `json:"subnet_routes"`
@@ -74,4 +78,19 @@ func (s *Subnet) UpdateDNSServers(dnsServers []*SubnetDNSServer) error {
 func (s *Subnet) UpdateRoutes(routes []*SubnetRoute) error {
 	s.SubnetRoutes = routes
 	return s.update()
+}
+
+func (s Subnet) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/network/%s/subnet/%s", s.network.ID, s.ID)
+	for {
+		err = s.manager.Get(path, Defaults(), &s)
+		if err != nil {
+			return
+		}
+		if !s.Locked {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return
 }

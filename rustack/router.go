@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Router struct {
 	manager   *Manager
@@ -10,7 +13,9 @@ type Router struct {
 	Vdc       struct {
 		Id string `json:"id"`
 	} `json:"vdc"`
-	Ports []*Port `json:"ports"`
+	Ports    []*Port   `json:"ports"`
+	Floating *Floating `json:"floating"`
+	Locked   bool      `json:"locked"`
 }
 
 func NewRouter(name string) Router {
@@ -52,6 +57,21 @@ func (m *Manager) GetRouter(id string) (router *Router, err error) {
 	return
 }
 
+func (r Router) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/router/%s", r.ID)
+	for {
+		err = r.manager.Get(path, Defaults(), &r)
+		if err != nil {
+			return
+		}
+		if !r.Locked {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return
+}
+
 func (r *Router) AddPort(port *Port) error {
 	type TempPortCreate struct {
 		Router      string   `json:"router"`
@@ -82,4 +102,31 @@ func (r *Router) AddPort(port *Port) error {
 func (r *Router) Delete() error {
 	path := fmt.Sprintf("v1/router/%s", r.ID)
 	return r.manager.Delete(path, Defaults(), r)
+}
+
+func (r *Router) Update() error {
+	args := &struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		IsDefault bool   `json:"is_default"`
+		Vdc       struct {
+			Id string `json:"id"`
+		} `json:"vdc"`
+		Ports    []*Port `json:"ports"`
+		Floating *string `json:"floating"`
+	}{
+		ID:        r.ID,
+		Name:      r.Name,
+		IsDefault: r.IsDefault,
+		Vdc:       r.Vdc,
+		Ports:     r.Ports,
+	}
+	if r.Floating == nil {
+		args.Floating = nil
+	} else {
+		args.Floating = &r.Floating.ID
+	}
+	path := fmt.Sprintf("v1/router/%s", r.ID)
+	r.WaitLock()
+	return r.manager.Put(path, args, r)
 }

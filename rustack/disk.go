@@ -62,16 +62,22 @@ func (v *Vm) AttachDisk(disk *Disk) error {
 	if err != nil {
 		return err
 	}
+	v.Disks = append(v.Disks, disk)
 
 	return nil
 }
 
 func (v *Vm) DetachDisk(disk *Disk) error {
 	path := fmt.Sprintf("v1/disk/%s/detach", disk.ID)
-
 	err := v.manager.Post(path, nil, nil)
 	if err != nil {
 		return err
+	}
+	for i, vmDisk := range v.Disks {
+		if vmDisk == disk {
+			v.Disks = append(v.Disks[:i], v.Disks[i+1:]...)
+			break
+		}
 	}
 
 	return nil

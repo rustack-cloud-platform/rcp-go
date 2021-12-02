@@ -27,6 +27,11 @@ type Manager struct {
 	ctx       context.Context
 }
 
+type Task struct {
+	Status string `json:"status"`
+	Name   string `json:"name"`
+}
+
 type logger interface {
 	Debugf(string, ...interface{})
 }
@@ -208,12 +213,15 @@ func (m *Manager) WaitTask(taskId string) error {
 
 	path := fmt.Sprintf("v1/job/%s", taskId)
 	start := time.Now()
+	var task Task
 
 	for {
-		err := m.Get(path, Arguments{}, nil)
-
+		err := m.Get(path, Arguments{}, task)
 		if err != nil {
 			break
+		}
+		if task.Status == "error" {
+			return errors.New(fmt.Sprintf("Task in error status, step: %s", task.Name))
 		}
 
 		if err := m.sleep(RetryTime * time.Millisecond); err != nil {

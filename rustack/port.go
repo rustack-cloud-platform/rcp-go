@@ -7,7 +7,15 @@ type Port struct {
 	ID                string              `json:"id"`
 	IpAddress         *string             `json:"ip_address,omitempty"`
 	Network           *Network            `json:"network"`
-	FirewallTemplates []*FirewallTemplate `json:"fw_templates"`
+	FirewallTemplates []*FirewallTemplate `json:"fw_templates,omitempty"`
+	Connected         *Connected          `json:"connected"`
+}
+
+type Connected struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Vdc  *Vdc   `json:"vdc"`
 }
 
 func NewPort(network *Network, firewallTemplates []*FirewallTemplate, ipAddress *string) Port {
@@ -26,6 +34,7 @@ func (v *Vdc) GetPorts(extraArgs ...Arguments) (ports []*Port, err error) {
 	err = v.manager.GetItems(path, args, &ports)
 	for i := range ports {
 		ports[i].manager = v.manager
+		ports[i].Network.manager = v.manager
 	}
 	return
 }
@@ -55,4 +64,45 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 func (p *Port) Delete() error {
 	path := fmt.Sprintf("v1/port/%s", p.ID)
 	return p.manager.Delete(path, Defaults(), p)
+}
+
+func (r *Router) CreatePort(port *Port, toConnect interface{}) (err error) {
+	args := &struct {
+		manager           *Manager
+		ID                string              `json:"id"`
+		IpAddress         *string             `json:"ip_address,omitempty"`
+		Network           string              `json:"network"`
+		Router            string              `json:"router,omitempty"`
+		Vm                string              `json:"vm,omitempty"`
+		Lbaas             string              `json:"lbaas,omitempty"`
+		FirewallTemplates []*FirewallTemplate `json:"fw_templates,omitempty"`
+	}{
+		ID:                port.ID,
+		IpAddress:         port.IpAddress,
+		Network:           port.Network.ID,
+		FirewallTemplates: port.FirewallTemplates,
+	}
+	switch v := toConnect.(type) {
+	case *Router:
+		args.Router = v.ID
+	case *Vm:
+		args.Vm = v.ID
+		// TODO: Create lbaas
+		// case Lbaas:
+		// 	args.Lbaas = toConnect.(Lbaas).ID
+	default:
+		return fmt.Errorf("ERROR. Unknown type: %s", v)
+	}
+	err = r.manager.Post("v1/port", args, &port)
+	return
+}
+
+func (m *Manager) GetPort(id string) (port *Port, err error) {
+	path := fmt.Sprintf("v1/port/%s", id)
+	err = m.Get(path, Defaults(), &port)
+	if err != nil {
+		return
+	}
+	port.manager = m
+	return
 }

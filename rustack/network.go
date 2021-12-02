@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"time"
 )
 
 type Network struct {
@@ -13,6 +14,7 @@ type Network struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"vdc"`
+	Locked bool `json:"locked"`
 }
 
 func NewNetwork(name string) Network {
@@ -82,4 +84,19 @@ func (n *Network) GetSubnets() (subnets []*Subnet, err error) {
 func (n *Network) Delete() error {
 	path := fmt.Sprintf("v1/network/%s", n.ID)
 	return n.manager.Delete(path, Defaults(), n)
+}
+
+func (n Network) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/network/%s", n.ID)
+	for {
+		err = n.manager.Get(path, Defaults(), &n)
+		if err != nil {
+			return
+		}
+		if !n.Locked {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return
 }
