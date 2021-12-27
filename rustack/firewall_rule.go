@@ -12,6 +12,7 @@ type FirewallRule struct {
 	DstPortRangeMax *int   `json:"dst_port_range_max"`
 	DstPortRangeMin *int   `json:"dst_port_range_min"`
 	Protocol        string `json:"protocol"`
+	Locked          bool   `json:"locked"`
 }
 
 func (f *FirewallTemplate) GetRuleById(firewallRuleId string) (firewallRule *FirewallRule, err error) {
@@ -64,4 +65,9 @@ func (f *FirewallTemplate) CreateFirewallRule(firewallRule *FirewallRule) (err e
 	firewallRule.manager = f.manager
 
 	return
+}
+
+func (f FirewallRule) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.TemplateId, f.ID)
+	return loopWaitLock(f.manager, path)
 }

@@ -48,3 +48,20 @@ func SleepWithContext(ctx context.Context, dur time.Duration) error {
 
 	return nil
 }
+
+func loopWaitLock(manager *Manager, path string) (err error) {
+	var wait struct {
+		Locked bool `json:"locked"`
+	}
+	for {
+		err = manager.Get(path, Defaults(), &wait)
+		if err != nil {
+			return
+		}
+		if !wait.Locked {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	return
+}

@@ -2,7 +2,6 @@ package rustack
 
 import (
 	"fmt"
-	"time"
 )
 
 type Vm struct {
@@ -196,15 +195,5 @@ func (v *Vm) Delete() error {
 
 func (v Vm) WaitLock() (err error) {
 	path := fmt.Sprintf("v1/vm/%s", v.ID)
-	for {
-		err = v.manager.Get(path, Defaults(), &v)
-		if err != nil {
-			return
-		}
-		if !v.Locked {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	return
+	return loopWaitLock(v.manager, path)
 }

@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Port struct {
 	manager           *Manager
@@ -9,6 +11,7 @@ type Port struct {
 	Network           *Network            `json:"network"`
 	FirewallTemplates []*FirewallTemplate `json:"fw_templates,omitempty"`
 	Connected         *Connected          `json:"connected"`
+	Locked            bool                `json:"locked"`
 }
 
 type Connected struct {
@@ -105,4 +108,9 @@ func (m *Manager) GetPort(id string) (port *Port, err error) {
 	}
 	port.manager = m
 	return
+}
+
+func (p Port) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/port/%s", p.ID)
+	return loopWaitLock(p.manager, path)
 }

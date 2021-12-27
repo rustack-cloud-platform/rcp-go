@@ -2,7 +2,6 @@ package rustack
 
 import (
 	"fmt"
-	"time"
 )
 
 type Router struct {
@@ -59,17 +58,7 @@ func (m *Manager) GetRouter(id string) (router *Router, err error) {
 
 func (r Router) WaitLock() (err error) {
 	path := fmt.Sprintf("v1/router/%s", r.ID)
-	for {
-		err = r.manager.Get(path, Defaults(), &r)
-		if err != nil {
-			return
-		}
-		if !r.Locked {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	return
+	return loopWaitLock(r.manager, path)
 }
 
 func (r *Router) AddPort(port *Port) error {

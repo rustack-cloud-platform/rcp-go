@@ -6,6 +6,7 @@ type FirewallTemplate struct {
 	manager *Manager
 	ID      string `json:"id"`
 	Name    string `json:"name"`
+	Locked  bool   `json:"locked"`
 }
 
 func (m *Manager) GetFirewallTemplate(id string) (firewallTemplate *FirewallTemplate, err error) {
@@ -71,4 +72,9 @@ func (v *Vdc) CreateFirewallTemplate(firewallTemplate *FirewallTemplate) (err er
 		firewallTemplate.manager = v.manager
 	}
 	return
+}
+
+func (f FirewallTemplate) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/firewall/%s", f.ID)
+	return loopWaitLock(f.manager, path)
 }

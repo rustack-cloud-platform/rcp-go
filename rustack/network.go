@@ -2,7 +2,6 @@ package rustack
 
 import (
 	"fmt"
-	"time"
 )
 
 type Network struct {
@@ -88,15 +87,5 @@ func (n *Network) Delete() error {
 
 func (n Network) WaitLock() (err error) {
 	path := fmt.Sprintf("v1/network/%s", n.ID)
-	for {
-		err = n.manager.Get(path, Defaults(), &n)
-		if err != nil {
-			return
-		}
-		if !n.Locked {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	return
+	return loopWaitLock(n.manager, path)
 }

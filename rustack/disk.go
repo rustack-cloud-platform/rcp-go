@@ -120,3 +120,8 @@ func (d *Disk) Delete() error {
 	path := fmt.Sprintf("v1/disk/%s", d.ID)
 	return d.manager.Delete(path, Defaults(), d)
 }
+
+func (d Disk) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/disk/%s", d.ID)
+	return loopWaitLock(d.manager, path)
+}

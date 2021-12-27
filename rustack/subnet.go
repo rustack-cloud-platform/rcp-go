@@ -2,7 +2,6 @@ package rustack
 
 import (
 	"fmt"
-	"time"
 )
 
 type SubnetDNSServer struct {
@@ -82,15 +81,5 @@ func (s *Subnet) UpdateRoutes(routes []*SubnetRoute) error {
 
 func (s Subnet) WaitLock() (err error) {
 	path := fmt.Sprintf("v1/network/%s/subnet/%s", s.network.ID, s.ID)
-	for {
-		err = s.manager.Get(path, Defaults(), &s)
-		if err != nil {
-			return
-		}
-		if !s.Locked {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	return
+	return loopWaitLock(s.manager, path)
 }

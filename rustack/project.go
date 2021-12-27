@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Project struct {
 	manager *Manager
@@ -9,6 +11,7 @@ type Project struct {
 	Client  struct {
 		Id string `json:"id"`
 	} `json:"client"`
+	Locked bool `json:"locked"`
 }
 
 func NewProject(name string) Project {
@@ -60,4 +63,9 @@ func (p *Project) Rename(name string) error {
 func (p *Project) Delete() error {
 	path := fmt.Sprintf("v1/project/%s", p.ID)
 	return p.manager.Delete(path, Defaults(), p)
+}
+
+func (p Project) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/project/%s", p.ID)
+	return loopWaitLock(p.manager, path)
 }

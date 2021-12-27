@@ -1,11 +1,14 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Vdc struct {
 	manager    *Manager
 	ID         string     `json:"id"`
 	Name       string     `json:"name"`
+	Locked     bool       `json:"locked"`
 	Hypervisor Hypervisor `json:"hypervisor"`
 
 	Project struct {
@@ -228,4 +231,9 @@ func (v *Vdc) CreateDisk(disk *Disk) error {
 	}
 
 	return err
+}
+
+func (v Vdc) WaitLock() (err error) {
+	path := fmt.Sprintf("v1/vdc/%s", v.ID)
+	return loopWaitLock(v.manager, path)
 }
