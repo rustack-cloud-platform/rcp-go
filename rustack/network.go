@@ -14,6 +14,7 @@ type Network struct {
 		Name string `json:"name"`
 	} `json:"vdc"`
 	Locked bool `json:"locked"`
+	Subnets []Subnet `json:"subnets"`
 }
 
 func NewNetwork(name string) Network {
@@ -50,6 +51,10 @@ func (m *Manager) GetNetwork(id string) (network *Network, err error) {
 		return
 	}
 	network.manager = m
+	for i, _ := range network.Subnets {
+		network.Subnets[i].network = network
+		network.Subnets[i].manager = m
+	}
 	return
 }
 
