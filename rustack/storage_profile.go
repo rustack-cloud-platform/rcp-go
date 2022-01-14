@@ -28,6 +28,9 @@ func (v *Vdc) GetStorageProfile(id string) (storageProfile *StorageProfile, err 
 
 	path := fmt.Sprintf("v1/storage_profile/%s", id)
 	err = v.manager.Get(path, args, &storageProfile)
+	if err != nil {
+		return
+	}
 	storageProfile.manager = v.manager
 	return
 }

@@ -53,6 +53,9 @@ func (m *Manager) GetRouter(id string) (router *Router, err error) {
 		return
 	}
 	router.manager = m
+	for _, port := range router.Ports {
+		port.manager = m
+	}
 	return
 }
 

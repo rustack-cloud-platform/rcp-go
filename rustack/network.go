@@ -51,7 +51,7 @@ func (m *Manager) GetNetwork(id string) (network *Network, err error) {
 		return
 	}
 	network.manager = m
-	for i, _ := range network.Subnets {
+	for i := range network.Subnets {
 		network.Subnets[i].network = network
 		network.Subnets[i].manager = m
 	}
