@@ -12,9 +12,9 @@ type Router struct {
 	Vdc       struct {
 		Id string `json:"id"`
 	} `json:"vdc"`
-	Ports    []*Port   `json:"ports"`
-	Floating *Floating `json:"floating"`
-	Locked   bool      `json:"locked"`
+	Ports    []*Port `json:"ports"`
+	Floating *Port   `json:"floating"`
+	Locked   bool    `json:"locked"`
 }
 
 func NewRouter(name string) Router {

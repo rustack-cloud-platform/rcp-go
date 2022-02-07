@@ -69,7 +69,7 @@ func (m *Manager) Get(path string, args Arguments, target interface{}) error {
 
 	req = req.WithContext(m.ctx)
 
-	_, err = m.do(req, url, target)
+	_, err = m.do(req, url, target, nil)
 	return err
 }
 
@@ -104,7 +104,7 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 
 		temp := new(tempStruct)
 
-		_, err = m.do(req, url, temp)
+		_, err = m.do(req, url, temp, nil)
 		if err != nil {
 			break
 		}
@@ -133,6 +133,29 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 	return nil
 }
 
+func (m *Manager) GetSubItems(path string, args Arguments, target interface{}) error {
+
+	m.log("[rustack] GET %s", path)
+
+	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return errors.Wrapf(err, "Invalid GET request %s", url)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
+
+	req = req.WithContext(m.ctx)
+
+	_, err = m.do(req, url, target, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 	m.log("[rustack] PUT %s", path)
 
@@ -144,7 +167,6 @@ func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 	m.log("[rustack] Send %s", res)
 
 	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
-	// urlWithParams := fmt.Sprintf("%s?%s", url, params.Encode())
 
 	req, err := http.NewRequest("PUT", url, bytes.NewReader(res))
 	if err != nil {
@@ -156,7 +178,7 @@ func (m *Manager) Put(path string, args interface{}, target interface{}) error {
 
 	req = req.WithContext(m.ctx)
 
-	taskIds, err := m.do(req, url, target)
+	taskIds, err := m.do(req, url, target, res)
 	m.waitTasks(taskIds)
 
 	return err
@@ -184,7 +206,7 @@ func (m *Manager) Post(path string, args interface{}, target interface{}) error 
 
 	req = req.WithContext(m.ctx)
 
-	taskIds, err := m.do(req, url, target)
+	taskIds, err := m.do(req, url, target, res)
 	m.waitTasks(taskIds)
 
 	return err
@@ -202,7 +224,7 @@ func (m *Manager) Delete(path string, args Arguments, target interface{}) error 
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 
-	taskIds, err := m.do(req, url, target)
+	taskIds, err := m.do(req, url, target, nil)
 	m.waitTasks(taskIds)
 
 	return err
@@ -257,7 +279,7 @@ func (m *Manager) sleep(dur time.Duration) error {
 	return nil
 }
 
-func (m *Manager) do(req *http.Request, url string, target interface{}) (string, error) {
+func (m *Manager) do(req *http.Request, url string, target interface{}, requestBody []byte) (string, error) {
 	req.Header.Set("Accept-Language", "ru-ru")
 
 	start := time.Now()
@@ -265,6 +287,8 @@ func (m *Manager) do(req *http.Request, url string, target interface{}) (string,
 
 	for {
 		m.log("[rustack] Perform %s...", req.Method)
+
+		req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
 
 		resp_, err := m.Client.Do(req)
 		if err != nil {
