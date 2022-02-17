@@ -51,9 +51,11 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 	}
 
 	args := &struct {
-		FwTemplates []*string `json:"fw_templates"`
+		FwTemplates   []*string `json:"fw_templates"`
+		SecurityRules []string `json:"security_rules"`
 	}{
 		FwTemplates: fwTemplates,
+		SecurityRules: []string{},
 	}
 
 	err := p.manager.Put(path, args, nil)
