@@ -52,9 +52,9 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 
 	args := &struct {
 		FwTemplates   []*string `json:"fw_templates"`
-		SecurityRules []string `json:"security_rules"`
+		SecurityRules []string  `json:"security_rules"`
 	}{
-		FwTemplates: fwTemplates,
+		FwTemplates:   fwTemplates,
 		SecurityRules: []string{},
 	}
 
@@ -68,6 +68,11 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 
 func (p *Port) Delete() error {
 	path := fmt.Sprintf("v1/port/%s", p.ID)
+	return p.manager.Delete(path, Defaults(), p)
+}
+
+func (p *Port) ForceDelete() error {
+	path := fmt.Sprintf("v1/port/%s/force", p.ID)
 	return p.manager.Delete(path, Defaults(), p)
 }
 

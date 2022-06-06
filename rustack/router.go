@@ -17,8 +17,11 @@ type Router struct {
 	Locked   bool    `json:"locked"`
 }
 
-func NewRouter(name string) Router {
+func NewRouter(name string, floating *string) Router {
 	r := Router{Name: name}
+	if floating != nil {
+		r.Floating = &Port{IpAddress: floating}
+	}
 	return r
 }
 
