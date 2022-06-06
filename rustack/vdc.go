@@ -107,12 +107,20 @@ func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 		Name     string            `json:"name"`
 		Vdc      string            `json:"vdc"`
 		Ports    []*TempPortCreate `json:"ports"`
-		Floating string            `json:"floating"`
+		Floating *string           `json:"floating"`
 	}{
 		Name:     router.Name,
 		Vdc:      v.ID,
 		Ports:    tempPorts,
-		Floating: "RANDOM_FIP",
+		Floating: nil,
+	}
+
+	if router.Floating != nil {
+		if router.Floating.ID != "" {
+			args.Floating = &router.Floating.ID
+		} else {
+			args.Floating = router.Floating.IpAddress
+		}
 	}
 
 	err := v.manager.Post("v1/router", args, &router)
