@@ -289,16 +289,22 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 		m.log("[rustack] Perform %s...", req.Method)
 
 		req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
-
 		resp_, err := m.Client.Do(req)
 		if err != nil {
 			return "", errors.Wrapf(err, "HTTP request failure on %s", url)
 		}
+
 		defer resp_.Body.Close()
 
 		if resp_.StatusCode == 409 {
 			m.log("[rustack] Object '%s' locked. Try again in %dms...", url, RetryTime)
-
+			body, err := ioutil.ReadAll(resp_.Body)
+			if err != nil {
+				return "", errors.Wrapf(err, "HTTP Read error on response for %s", url)
+			}
+			if strings.Contains(string(body), "limittype") {
+				return "", errors.New(string(body))
+			}
 			if err := m.sleep(RetryTime * time.Millisecond); err != nil {
 				return "", err
 			}
