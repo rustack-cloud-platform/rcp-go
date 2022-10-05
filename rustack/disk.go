@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 type Disk struct {
 	manager        *Manager
@@ -40,7 +43,7 @@ func (v *Vdc) GetDisks(extraArgs ...Arguments) (disks []*Disk, err error) {
 }
 
 func (m *Manager) GetDisk(id string) (disk *Disk, err error) {
-	path := fmt.Sprintf("v1/disk/%s", id)
+	path, _ := url.JoinPath("v1/disk", id)
 	err = m.Get(path, Defaults(), &disk)
 	if err != nil {
 		return
@@ -58,7 +61,7 @@ func (v *Vm) AttachDisk(disk *Disk) error {
 		Vm: v.ID,
 	}
 
-	err := v.manager.Post(path, args, nil)
+	err := v.manager.Request("POST", path, args, nil)
 	if err != nil {
 		return err
 	}
@@ -68,8 +71,9 @@ func (v *Vm) AttachDisk(disk *Disk) error {
 }
 
 func (v *Vm) DetachDisk(disk *Disk) error {
+
 	path := fmt.Sprintf("v1/disk/%s/detach", disk.ID)
-	err := v.manager.Post(path, nil, nil)
+	err := v.manager.Request("POST", path, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -83,8 +87,8 @@ func (v *Vm) DetachDisk(disk *Disk) error {
 	return nil
 }
 
-func (d *Disk) update(name string, size int, storageProfileId string) error {
-	path := fmt.Sprintf("v1/disk/%s", d.ID)
+func (d *Disk) Update(name string, size int, storageProfileId string) error {
+	path, _ := url.JoinPath("v1/disk", d.ID)
 
 	args := &struct {
 		Name           string `json:"name"`
@@ -96,7 +100,7 @@ func (d *Disk) update(name string, size int, storageProfileId string) error {
 		StorageProfile: storageProfileId,
 	}
 
-	err := d.manager.Put(path, args, d)
+	err := d.manager.Request("PUT", path, args, d)
 	if err != nil {
 		return err
 	}
@@ -105,23 +109,23 @@ func (d *Disk) update(name string, size int, storageProfileId string) error {
 }
 
 func (d *Disk) Rename(name string) error {
-	return d.update(name, d.Size, d.StorageProfile.ID)
+	return d.Update(name, d.Size, d.StorageProfile.ID)
 }
 
 func (d *Disk) Resize(size int) error {
-	return d.update(d.Name, size, d.StorageProfile.ID)
+	return d.Update(d.Name, size, d.StorageProfile.ID)
 }
 
 func (d *Disk) UpdateStorageProfile(storageProfile StorageProfile) error {
-	return d.update(d.Name, d.Size, storageProfile.ID)
+	return d.Update(d.Name, d.Size, storageProfile.ID)
 }
 
 func (d *Disk) Delete() error {
-	path := fmt.Sprintf("v1/disk/%s", d.ID)
+	path, _ := url.JoinPath("v1/disk", d.ID)
 	return d.manager.Delete(path, Defaults(), d)
 }
 
 func (d Disk) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/disk/%s", d.ID)
+	path, _ := url.JoinPath("v1/disk", d.ID)
 	return loopWaitLock(d.manager, path)
 }

@@ -56,7 +56,7 @@ func (s *Subnet) Delete() error {
 
 func (s *Subnet) update() error {
 	path := fmt.Sprintf("v1/network/%s/subnet/%s", s.network.ID, s.ID)
-	return s.manager.Put(path, s, s)
+	return s.manager.Request("PUT", path, s, s)
 }
 
 func (s *Subnet) EnableDHCP() error {

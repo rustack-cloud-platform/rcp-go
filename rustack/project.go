@@ -1,7 +1,7 @@
 package rustack
 
 import (
-	"fmt"
+	"net/url"
 )
 
 type Project struct {
@@ -32,7 +32,7 @@ func (m *Manager) GetProjects(extraArgs ...Arguments) (projects []*Project, err 
 }
 
 func (m *Manager) GetProject(id string) (project *Project, err error) {
-	path := fmt.Sprintf("v1/project/%s", id)
+	path, _ := url.JoinPath("v1/project", id)
 	err = m.Get(path, Defaults(), &project)
 	if err != nil {
 		return
@@ -47,7 +47,7 @@ func (c *Client) CreateProject(project *Project) error {
 		"client": c.ID,
 	}
 
-	err := c.manager.Post("v1/project", args, &project)
+	err := c.manager.Request("POST", "v1/project", args, &project)
 	if err == nil {
 		project.manager = c.manager
 	}
@@ -56,16 +56,16 @@ func (c *Client) CreateProject(project *Project) error {
 }
 
 func (p *Project) Rename(name string) error {
-	path := fmt.Sprintf("v1/project/%s", p.ID)
-	return p.manager.Put(path, Arguments{"name": name, "client": p.Client.Id}, p)
+	path, _ := url.JoinPath("v1/project", p.ID)
+	return p.manager.Request("PUT", path, Arguments{"name": name, "client": p.Client.Id}, p)
 }
 
 func (p *Project) Delete() error {
-	path := fmt.Sprintf("v1/project/%s", p.ID)
+	path, _ := url.JoinPath("v1/project", p.ID)
 	return p.manager.Delete(path, Defaults(), p)
 }
 
 func (p Project) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/project/%s", p.ID)
+	path, _ := url.JoinPath("v1/project", p.ID)
 	return loopWaitLock(p.manager, path)
 }

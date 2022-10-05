@@ -1,7 +1,7 @@
 package rustack
 
 import (
-	"fmt"
+	"net/url"
 )
 
 type Vdc struct {
@@ -44,7 +44,7 @@ func (v *Vdc) GetVdcs(extraArgs ...Arguments) (vdcs []*Vdc, err error) {
 }
 
 func (m *Manager) GetVdc(id string) (vdc *Vdc, err error) {
-	path := fmt.Sprintf("v1/vdc/%s", id)
+	path, _ := url.JoinPath("v1/vdc", id)
 	err = m.Get(path, Defaults(), &vdc)
 	if err != nil {
 		return
@@ -60,7 +60,7 @@ func (p *Project) CreateVdc(vdc *Vdc) error {
 		"project":    p.ID,
 	}
 
-	err := p.manager.Post("v1/vdc", args, &vdc)
+	err := p.manager.Request("POST", "v1/vdc", args, &vdc)
 	if err == nil {
 		vdc.manager = p.manager
 	}
@@ -69,12 +69,12 @@ func (p *Project) CreateVdc(vdc *Vdc) error {
 }
 
 func (v *Vdc) Rename(name string) error {
-	path := fmt.Sprintf("v1/vdc/%s", v.ID)
-	return v.manager.Put(path, Arguments{"name": name}, v)
+	path, _ := url.JoinPath("v1/vdc", v.ID)
+	return v.manager.Request("PUT", path, Arguments{"name": name}, v)
 }
 
 func (v *Vdc) Delete() error {
-	path := fmt.Sprintf("v1/vdc/%s", v.ID)
+	path, _ := url.JoinPath("v1/vdc", v.ID)
 	return v.manager.Delete(path, Defaults(), v)
 }
 
@@ -84,7 +84,7 @@ func (v *Vdc) CreateNetwork(network *Network) error {
 		"vdc":  v.ID,
 	}
 
-	err := v.manager.Post("v1/network", args, &network)
+	err := v.manager.Request("POST", "v1/network", args, &network)
 	if err == nil {
 		network.manager = v.manager
 	}
@@ -123,7 +123,7 @@ func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 		}
 	}
 
-	err := v.manager.Post("v1/router", args, &router)
+	err := v.manager.Request("POST", "v1/router", args, &router)
 	if err == nil {
 		router.manager = v.manager
 	}
@@ -196,7 +196,7 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 		args.Floating = vm.Floating.IpAddress
 	}
 
-	err := v.manager.Post("v1/vm", args, &vm)
+	err := v.manager.Request("POST", "v1/vm", args, &vm)
 	if err == nil {
 		vm.manager = v.manager
 		for idx := range vm.Ports {
@@ -233,7 +233,7 @@ func (v *Vdc) CreateDisk(disk *Disk) error {
 		args.Vdc = nil
 	}
 
-	err := v.manager.Post("v1/disk", args, &disk)
+	err := v.manager.Request("POST", "v1/disk", args, &disk)
 	if err == nil {
 		disk.manager = v.manager
 	}
@@ -241,7 +241,23 @@ func (v *Vdc) CreateDisk(disk *Disk) error {
 	return err
 }
 
+func (v *Vdc) CreateEmptyPort(port *Port) (err error) {
+	args := &struct {
+		manager   *Manager
+		ID        string  `json:"id"`
+		IpAddress *string `json:"ip_address,omitempty"`
+		Network   string  `json:"network"`
+	}{
+		ID:        port.ID,
+		IpAddress: port.IpAddress,
+		Network:   port.Network.ID,
+	}
+
+	err = v.manager.Request("POST", "v1/port", args, &port)
+	return
+}
+
 func (v Vdc) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/vdc/%s", v.ID)
+	path, _ := url.JoinPath("v1/vdc", v.ID)
 	return loopWaitLock(v.manager, path)
 }

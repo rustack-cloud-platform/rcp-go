@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"net/url"
+)
 
 type StorageProfile struct {
 	manager *Manager
@@ -26,7 +28,7 @@ func (v *Vdc) GetStorageProfile(id string) (storageProfile *StorageProfile, err 
 		"vdc": v.ID,
 	}
 
-	path := fmt.Sprintf("v1/storage_profile/%s", id)
+	path, _ := url.JoinPath("v1/storage_profile", id)
 	err = v.manager.Get(path, args, &storageProfile)
 	if err != nil {
 		return

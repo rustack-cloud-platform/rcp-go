@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"net/url"
+)
 
 type Hypervisor struct {
 	manager *Manager
@@ -18,7 +20,7 @@ func (p *Project) GetAvailableHypervisors() (hypervisors []*Hypervisor, err erro
 
 	var target tempType
 
-	path := fmt.Sprintf("v1/project/%s", p.ID)
+	path, _ := url.JoinPath("v1/project", p.ID)
 	err = p.manager.Get(path, Defaults(), &target)
 	hypervisors = target.Client.AllowedHypervisors
 

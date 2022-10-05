@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 type FirewallTemplate struct {
 	manager *Manager
@@ -10,7 +13,7 @@ type FirewallTemplate struct {
 }
 
 func (m *Manager) GetFirewallTemplate(id string) (firewallTemplate *FirewallTemplate, err error) {
-	path := fmt.Sprintf("v1/firewall/%s", id)
+	path, _ := url.JoinPath("v1/firewall/", id)
 	err = m.Get(path, Defaults(), &firewallTemplate)
 	if err != nil {
 		return
@@ -41,7 +44,7 @@ func (f *FirewallTemplate) Update(firewallRule *FirewallRule) (err error) {
 
 	path := fmt.Sprintf("v1/firewall/%s/rule", f.ID)
 
-	err = f.manager.Post(path, firewallRule, &firewallRule)
+	err = f.manager.Request("POST", path, firewallRule, &firewallRule)
 	if err == nil {
 		firewallRule.manager = f.manager
 	}
@@ -49,13 +52,13 @@ func (f *FirewallTemplate) Update(firewallRule *FirewallRule) (err error) {
 }
 
 func (f *FirewallTemplate) Delete() (err error) {
-	path := fmt.Sprintf("v1/firewall/%s", f.ID)
+	path, _ := url.JoinPath("v1/firewall", f.ID)
 	return f.manager.Delete(path, Defaults(), &f)
 }
 
 func (f *FirewallTemplate) Rename(name string) (err error) {
-	path := fmt.Sprintf("v1/firewall/%s", f.ID)
-	return f.manager.Put(path, Arguments{"name": name}, &f)
+	path, _ := url.JoinPath("v1/firewall", f.ID)
+	return f.manager.Request("PUT", path, Arguments{"name": name}, &f)
 }
 
 func (v *Vdc) CreateFirewallTemplate(firewallTemplate *FirewallTemplate) (err error) {
@@ -67,7 +70,7 @@ func (v *Vdc) CreateFirewallTemplate(firewallTemplate *FirewallTemplate) (err er
 		Vdc:  &v.ID,
 	}
 
-	err = v.manager.Post("v1/firewall", args, &firewallTemplate)
+	err = v.manager.Request("POST", "v1/firewall", args, &firewallTemplate)
 	if err == nil {
 		firewallTemplate.manager = v.manager
 	}
@@ -75,6 +78,6 @@ func (v *Vdc) CreateFirewallTemplate(firewallTemplate *FirewallTemplate) (err er
 }
 
 func (f FirewallTemplate) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/firewall/%s", f.ID)
+	path, _ := url.JoinPath("v1/firewall", f.ID)
 	return loopWaitLock(f.manager, path)
 }
