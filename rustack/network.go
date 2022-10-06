@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"net/url"
 )
 
 type Network struct {
@@ -13,7 +14,7 @@ type Network struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"vdc"`
-	Locked bool `json:"locked"`
+	Locked  bool     `json:"locked"`
 	Subnets []Subnet `json:"subnets"`
 }
 
@@ -60,7 +61,7 @@ func (m *Manager) GetNetwork(id string) (network *Network, err error) {
 
 func (n *Network) CreateSubnet(subnet *Subnet) error {
 	path := fmt.Sprintf("v1/network/%s/subnet", n.ID)
-	err := n.manager.Post(path, subnet, &subnet)
+	err := n.manager.Request("POST", path, subnet, &subnet)
 	if err == nil {
 		subnet.manager = n.manager
 		subnet.network = n
@@ -71,7 +72,7 @@ func (n *Network) CreateSubnet(subnet *Subnet) error {
 
 func (n *Network) Rename(name string) error {
 	path := fmt.Sprintf("v1/network/%s", n.ID)
-	return n.manager.Put(path, Arguments{"name": name}, n)
+	return n.manager.Request("Put", path, Arguments{"name": name}, n)
 }
 
 func (n *Network) GetSubnets() (subnets []*Subnet, err error) {
@@ -86,11 +87,11 @@ func (n *Network) GetSubnets() (subnets []*Subnet, err error) {
 }
 
 func (n *Network) Delete() error {
-	path := fmt.Sprintf("v1/network/%s", n.ID)
+	path, _ := url.JoinPath("v1/network", n.ID)
 	return n.manager.Delete(path, Defaults(), n)
 }
 
 func (n Network) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/network/%s", n.ID)
+	path, _ := url.JoinPath("v1/network", n.ID)
 	return loopWaitLock(n.manager, path)
 }

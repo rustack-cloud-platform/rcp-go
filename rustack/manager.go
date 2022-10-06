@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -52,24 +53,52 @@ func (m *Manager) WithContext(ctx context.Context) *Manager {
 	return &newManager
 }
 
+func (m *Manager) Request(method string, path string, args interface{}, target interface{}) error {
+	m.log("[rustack] %s %s", method, path)
+
+	res, err := json.Marshal(args)
+	if err != nil {
+		return err
+	}
+
+	m.log("[rustack] Send %s", res)
+
+	request_url, _ := url.JoinPath(m.BaseURL, path)
+
+	req, err := http.NewRequest(method, request_url, bytes.NewReader(res))
+	if err != nil {
+		return errors.Wrapf(err, "Invalid %s request %s", method, request_url)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
+	req.Header.Set("Content-Type", "application/json")
+
+	req = req.WithContext(m.ctx)
+
+	taskIds, err := m.do(req, request_url, target, res)
+	m.waitTasks(taskIds)
+
+	return err
+}
+
 func (m *Manager) Get(path string, args Arguments, target interface{}) error {
 	m.log("[rustack] GET %s", path)
 
 	params := args.ToURLValues()
 
-	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
-	urlWithParams := fmt.Sprintf("%s?%s", url, params.Encode())
+	request_url, _ := url.JoinPath(m.BaseURL, path)
+	urlWithParams := fmt.Sprintf("%s?%s", request_url, params.Encode())
 
 	req, err := http.NewRequest("GET", urlWithParams, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Invalid GET request %s", url)
+		return errors.Wrapf(err, "Invalid GET request %s", request_url)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 
 	req = req.WithContext(m.ctx)
 
-	_, err = m.do(req, url, target, nil)
+	_, err = m.do(req, request_url, target, nil)
 	return err
 }
 
@@ -84,12 +113,12 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 
 		m.log("[rustack] GET %s?%s", path, params.Encode())
 
-		url := fmt.Sprintf("%s/%s", m.BaseURL, path)
-		urlWithParams := fmt.Sprintf("%s?%s", url, params.Encode())
+		request_url, _ := url.JoinPath(m.BaseURL, path)
+		urlWithParams := fmt.Sprintf("%s?%s", request_url, params.Encode())
 
 		req, err := http.NewRequest("GET", urlWithParams, nil)
 		if err != nil {
-			return errors.Wrapf(err, "Invalid GET request %s", url)
+			return errors.Wrapf(err, "Invalid GET request %s", request_url)
 		}
 
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
@@ -104,7 +133,7 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 
 		temp := new(tempStruct)
 
-		_, err = m.do(req, url, temp, nil)
+		_, err = m.do(req, request_url, temp, nil)
 		if err != nil {
 			break
 		}
@@ -137,18 +166,18 @@ func (m *Manager) GetSubItems(path string, args Arguments, target interface{}) e
 
 	m.log("[rustack] GET %s", path)
 
-	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
+	request_url, _ := url.JoinPath(m.BaseURL, path)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", request_url, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Invalid GET request %s", url)
+		return errors.Wrapf(err, "Invalid GET request %s", request_url)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 
 	req = req.WithContext(m.ctx)
 
-	_, err = m.do(req, url, target, nil)
+	_, err = m.do(req, request_url, target, nil)
 	if err != nil {
 		return err
 	}
@@ -156,75 +185,19 @@ func (m *Manager) GetSubItems(path string, args Arguments, target interface{}) e
 	return nil
 }
 
-func (m *Manager) Put(path string, args interface{}, target interface{}) error {
-	m.log("[rustack] PUT %s", path)
-
-	res, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-
-	m.log("[rustack] Send %s", res)
-
-	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
-
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(res))
-	if err != nil {
-		return errors.Wrapf(err, "Invalid PUT request %s", url)
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	req = req.WithContext(m.ctx)
-
-	taskIds, err := m.do(req, url, target, res)
-	m.waitTasks(taskIds)
-
-	return err
-}
-
-func (m *Manager) Post(path string, args interface{}, target interface{}) error {
-	m.log("[rustack] POST %s", path)
-
-	res, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-
-	m.log("[rustack] Send %s", res)
-
-	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(res))
-	if err != nil {
-		return errors.Wrapf(err, "Invalid POST request %s", url)
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	req = req.WithContext(m.ctx)
-
-	taskIds, err := m.do(req, url, target, res)
-	m.waitTasks(taskIds)
-
-	return err
-}
-
 func (m *Manager) Delete(path string, args Arguments, target interface{}) error {
 	m.log("[rustack] DELETE %s", path)
 
-	url := fmt.Sprintf("%s/%s", m.BaseURL, path)
+	request_url, _ := url.JoinPath(m.BaseURL, path)
 
-	req, err := http.NewRequest("DELETE", url, nil)
+	req, err := http.NewRequest("DELETE", request_url, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Invalid DELETE request %s", url)
+		return errors.Wrapf(err, "Invalid DELETE request %s", request_url)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", m.Token))
 
-	taskIds, err := m.do(req, url, target, nil)
+	taskIds, err := m.do(req, request_url, target, nil)
 	m.waitTasks(taskIds)
 
 	return err
@@ -233,7 +206,7 @@ func (m *Manager) Delete(path string, args Arguments, target interface{}) error 
 func (m *Manager) WaitTask(taskId string) error {
 	m.log("[rustack] Start waiting task %s...", taskId)
 
-	path := fmt.Sprintf("v1/job/%s", taskId)
+	path, _ := url.JoinPath("v1/job", taskId)
 	start := time.Now()
 	var task Task
 

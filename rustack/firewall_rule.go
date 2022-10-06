@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type FirewallRule struct {
 	manager         *Manager
@@ -50,7 +52,7 @@ func NewFirewallRule(name, destinationIp, direction, protocol string,
 
 func (f *FirewallRule) Update() (err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.TemplateId, f.ID)
-	return f.manager.Put(path, f, &f)
+	return f.manager.Request("PUT", path, f, &f)
 }
 
 func (f *FirewallRule) Delete() (err error) {
@@ -61,7 +63,7 @@ func (f *FirewallRule) Delete() (err error) {
 func (f *FirewallTemplate) CreateFirewallRule(firewallRule *FirewallRule) (err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule", f.ID)
 
-	err = f.manager.Post(path, firewallRule, &firewallRule)
+	err = f.manager.Request("POST", path, firewallRule, &firewallRule)
 	firewallRule.manager = f.manager
 
 	return

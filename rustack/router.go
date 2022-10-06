@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"net/url"
 )
 
 type Router struct {
@@ -50,7 +51,7 @@ func (v *Vdc) GetRouters(extraArgs ...Arguments) (routers []*Router, err error) 
 }
 
 func (m *Manager) GetRouter(id string) (router *Router, err error) {
-	path := fmt.Sprintf("v1/router/%s", id)
+	path, _ := url.JoinPath("v1/router", id)
 	err = m.Get(path, Defaults(), &router)
 	if err != nil {
 		return
@@ -63,11 +64,11 @@ func (m *Manager) GetRouter(id string) (router *Router, err error) {
 }
 
 func (r Router) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/router/%s", r.ID)
+	path, _ := url.JoinPath("v1/router", r.ID)
 	return loopWaitLock(r.manager, path)
 }
 
-func (r *Router) AddPort(port *Port) error {
+func (r *Router) ConnectPort(port *Port, exsist bool) error {
 	type TempPortCreate struct {
 		Router      string   `json:"router"`
 		Network     string   `json:"network"`
@@ -86,7 +87,15 @@ func (r *Router) AddPort(port *Port) error {
 		FwTemplates: fwTemplates,
 	}
 
-	err := r.manager.Post("v1/port", args, &port)
+	var err error
+	if exsist {
+		path, _ := url.JoinPath("v1/port", port.ID)
+		err = r.manager.Request("PUT", path, args, &port)
+
+	} else {
+		err = r.manager.Request("POST", "v1/port", args, &port)
+	}
+
 	if err == nil {
 		port.manager = r.manager
 	}
@@ -94,8 +103,24 @@ func (r *Router) AddPort(port *Port) error {
 	return err
 }
 
+func (r *Router) DisconnectPort(port *Port) error {
+	path := fmt.Sprintf("v1/port/%s/desconnect", port.ID)
+	err := r.manager.Request("PATCH", path, Defaults(), &port)
+	if err != nil {
+		return err
+	}
+	for i, routerPorts := range r.Ports {
+		if routerPorts == port {
+			r.Ports = append(r.Ports[:i], r.Ports[i+1:]...)
+			break
+		}
+	}
+
+	return nil
+}
+
 func (r *Router) Delete() error {
-	path := fmt.Sprintf("v1/router/%s", r.ID)
+	path, _ := url.JoinPath("v1/router", r.ID)
 	return r.manager.Delete(path, Defaults(), r)
 }
 
@@ -121,7 +146,7 @@ func (r *Router) Update() error {
 	} else {
 		args.Floating = &r.Floating.ID
 	}
-	path := fmt.Sprintf("v1/router/%s", r.ID)
+	path, _ := url.JoinPath("v1/router", r.ID)
 	r.WaitLock()
-	return r.manager.Put(path, args, r)
+	return r.manager.Request("PUT", path, args, r)
 }

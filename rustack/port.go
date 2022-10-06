@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"net/url"
 )
 
 type Port struct {
@@ -21,8 +22,8 @@ type Connected struct {
 	Vdc  *Vdc   `json:"vdc"`
 }
 
-func NewPort(network *Network, firewallTemplates []*FirewallTemplate, ipAddress *string) Port {
-	p := Port{Network: network, FirewallTemplates: firewallTemplates, IpAddress: ipAddress}
+func NewPort(network *Network, firewallTemplates []*FirewallTemplate, ipAddress string) Port {
+	p := Port{Network: network, FirewallTemplates: firewallTemplates, IpAddress: &ipAddress}
 	return p
 }
 
@@ -43,7 +44,7 @@ func (v *Vdc) GetPorts(extraArgs ...Arguments) (ports []*Port, err error) {
 }
 
 func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
-	path := fmt.Sprintf("v1/port/%s", p.ID)
+	path, _ := url.JoinPath("v1/port", p.ID)
 
 	var fwTemplates = make([]*string, 0)
 	for _, fwTemplate := range firewallTemplates {
@@ -58,7 +59,24 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 		SecurityRules: []string{},
 	}
 
-	err := p.manager.Put(path, args, nil)
+	err := p.manager.Request("PUT", path, args, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Port) UpdateIpAddress(ip_address *string) error {
+	path, _ := url.JoinPath("v1/port", p.ID)
+
+	args := &struct {
+		IpAddress *string `json:"ip_address,omitempty"`
+	}{
+		IpAddress: ip_address,
+	}
+
+	err := p.manager.Request("PUT", path, args, nil)
 	if err != nil {
 		return err
 	}
@@ -67,7 +85,7 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 }
 
 func (p *Port) Delete() error {
-	path := fmt.Sprintf("v1/port/%s", p.ID)
+	path, _ := url.JoinPath("v1/port", p.ID)
 	return p.manager.Delete(path, Defaults(), p)
 }
 
@@ -103,12 +121,12 @@ func (r *Router) CreatePort(port *Port, toConnect interface{}) (err error) {
 	default:
 		return fmt.Errorf("ERROR. Unknown type: %s", v)
 	}
-	err = r.manager.Post("v1/port", args, &port)
+	err = r.manager.Request("POST", "v1/port", args, &port)
 	return
 }
 
 func (m *Manager) GetPort(id string) (port *Port, err error) {
-	path := fmt.Sprintf("v1/port/%s", id)
+	path, _ := url.JoinPath("v1/port", id)
 	err = m.Get(path, Defaults(), &port)
 	if err != nil {
 		return
@@ -118,6 +136,6 @@ func (m *Manager) GetPort(id string) (port *Port, err error) {
 }
 
 func (p Port) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/port/%s", p.ID)
+	path, _ := url.JoinPath("v1/port", p.ID)
 	return loopWaitLock(p.manager, path)
 }

@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"net/url"
 )
 
 type Vm struct {
@@ -67,7 +68,7 @@ func (v *Vdc) GetVms(extraArgs ...Arguments) (vms []*Vm, err error) {
 }
 
 func (m *Manager) GetVm(id string) (vm *Vm, err error) {
-	path := fmt.Sprintf("v1/vm/%s", id)
+	path, _ := url.JoinPath("v1/vm", id)
 	err = m.Get(path, Defaults(), &vm)
 	if err != nil {
 		return
@@ -88,7 +89,7 @@ func (m *Manager) GetVm(id string) (vm *Vm, err error) {
 
 func (v *Vm) Reload() error {
 	m := v.manager
-	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	path, _ := url.JoinPath("v1/vm", v.ID)
 	if err := m.Get(path, Defaults(), &v); err != nil {
 		return err
 	}
@@ -108,7 +109,7 @@ func (v *Vm) Reload() error {
 	return nil
 }
 
-func (v *Vm) AddPort(port *Port) error {
+func (v *Vm) ConnectPort(port *Port, exsist bool) error {
 	type TempPortCreate struct {
 		Vm          string   `json:"vm"`
 		Network     string   `json:"network"`
@@ -127,7 +128,15 @@ func (v *Vm) AddPort(port *Port) error {
 		FwTemplates: fwTemplates,
 	}
 
-	err := v.manager.Post("v1/port", args, &port)
+	var err error
+	if exsist {
+		path, _ := url.JoinPath("v1/port", port.ID)
+		err = v.manager.Request("PUT", path, args, &port)
+
+	} else {
+		err = v.manager.Request("POST", "v1/port", args, &port)
+	}
+
 	if err == nil {
 		port.manager = v.manager
 	}
@@ -135,8 +144,24 @@ func (v *Vm) AddPort(port *Port) error {
 	return err
 }
 
+func (v *Vm) DisconnectPort(port *Port) error {
+	path := fmt.Sprintf("v1/port/%s/desconnect", port.ID)
+	err := v.manager.Request("PATCH", path, Defaults(), &port)
+	if err != nil {
+		return err
+	}
+	for i, vmPorts := range v.Ports {
+		if vmPorts == port {
+			v.Ports = append(v.Ports[:i], v.Ports[i+1:]...)
+			break
+		}
+	}
+
+	return nil
+}
+
 func (v *Vm) Update() error {
-	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	path, _ := url.JoinPath("v1/vm", v.ID)
 	args := &struct {
 		Name        string  `json:"name"`
 		Description string  `json:"description"`
@@ -161,7 +186,7 @@ func (v *Vm) Update() error {
 		}
 	}
 
-	return v.manager.Put(path, args, v)
+	return v.manager.Request("PUT", path, args, v)
 }
 
 func (v *Vm) updateState(state string) error {
@@ -173,7 +198,7 @@ func (v *Vm) updateState(state string) error {
 		State: state,
 	}
 
-	return v.manager.Post(path, args, v)
+	return v.manager.Request("POST", path, args, v)
 }
 
 func (v *Vm) PowerOn() error {
@@ -189,11 +214,11 @@ func (v *Vm) PowerOff() error {
 }
 
 func (v *Vm) Delete() error {
-	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	path, _ := url.JoinPath("v1/vm", v.ID)
 	return v.manager.Delete(path, Defaults(), v)
 }
 
 func (v Vm) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/vm/%s", v.ID)
+	path, _ := url.JoinPath("v1/vm", v.ID)
 	return loopWaitLock(v.manager, path)
 }

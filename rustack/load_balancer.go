@@ -1,6 +1,9 @@
 package rustack
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 type LoadBalancer struct {
 	manager *Manager
@@ -54,7 +57,7 @@ func (m *Manager) GetLoadBalancers(extraArgs ...Arguments) (lbaasList []*LoadBal
 }
 
 func (m *Manager) GetLoadBalancer(id string) (lbaas LoadBalancer, err error) {
-	path := fmt.Sprintf("v1/lbaas/%s", id)
+	path, _ := url.JoinPath("v1/lbaas", id)
 	err = m.Get(path, Defaults(), &lbaas)
 	if err != nil {
 		return
@@ -104,12 +107,12 @@ func (lb *LoadBalancer) Create() (err error) {
 		Floating:   lb.Floating.ID,
 		AutoIp:     lb.AutoIp,
 	}
-	err = lb.manager.Post("v1/lbaas", lbCreate, &lb)
+	err = lb.manager.Request("POST", "v1/lbaas", lbCreate, &lb)
 	return
 }
 
 func (lb *LoadBalancer) Delete() (err error) {
-	path := fmt.Sprintf("v1/lbaas/%s", lb.ID)
+	path, _ := url.JoinPath("v1/lbaas", lb.ID)
 	err = lb.manager.Delete(path, Defaults(), &lb)
 	return
 }
@@ -166,11 +169,11 @@ func (lb *LoadBalancer) CreatePool(pool *LoadBalancerPool) (err error) {
 		SessionPersistence: pool.SessionPersistence,
 	}
 	path := fmt.Sprintf("v1/lbaas/%s/pool", lb.ID)
-	err = lb.manager.Post(path, lbCreatePool, &pool)
+	err = lb.manager.Request("POST", path, lbCreatePool, &pool)
 	return
 }
 
 func (lb LoadBalancer) WaitLock() (err error) {
-	path := fmt.Sprintf("v1/lbaas/%s", lb.ID)
+	path, _ := url.JoinPath("v1/lbaas", lb.ID)
 	return loopWaitLock(lb.manager, path)
 }

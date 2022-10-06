@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"net/url"
+)
 
 type Kubernetes struct {
 	manager *Manager
@@ -14,10 +16,10 @@ type Kubernetes struct {
 		Name string `json:"name"`
 	} `json:"project"`
 
-	Floating     *Port `json:"floating"`
-	JobId        string    `json:"job_id"`
-	NodeCpu      int       `json:"node_cpu"`
-	NodeDiskSize int       `json:"node_disk_size"`
+	Floating     *Port  `json:"floating"`
+	JobId        string `json:"job_id"`
+	NodeCpu      int    `json:"node_cpu"`
+	NodeDiskSize int    `json:"node_disk_size"`
 
 	NodeRam            int             `json:"node_ram"`
 	NodeStorageProfile *StorageProfile `json:"node_storage_profile"`
@@ -32,7 +34,7 @@ func NewKubernetes(name string, vdc *Vdc) Kubernetes {
 }
 
 func (m *Manager) GetKubernetes(id string) (k8s Kubernetes, err error) {
-	path := fmt.Sprintf("v1/kubernetes/%s", id)
+	path, _ := url.JoinPath("v1/kubernetes", id)
 	err = m.Get(path, Defaults(), &k8s)
 	if err != nil {
 		return

@@ -1,6 +1,8 @@
 package rustack
 
-import "fmt"
+import (
+	"net/url"
+)
 
 type Template struct {
 	manager *Manager
@@ -12,7 +14,7 @@ type Template struct {
 }
 
 func (m *Manager) GetTemplate(id string) (template *Template, err error) {
-	path := fmt.Sprintf("v1/template/%s", id)
+	path, _ := url.JoinPath("v1/template", id)
 	err = m.Get(path, Defaults(), &template)
 	if err != nil {
 		return

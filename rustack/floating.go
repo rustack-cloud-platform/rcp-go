@@ -2,6 +2,7 @@ package rustack
 
 import (
 	"fmt"
+	"net/url"
 )
 
 type Floating struct {
@@ -10,7 +11,7 @@ type Floating struct {
 }
 
 func (m *Manager) GetFloating(id string) (fip *Floating, err error) {
-	path := fmt.Sprintf("v1/floating/%s", id)
+	path, _ := url.JoinPath("v1/floating", id)
 	err = m.Get(path, Defaults(), &fip)
 	return
 }
