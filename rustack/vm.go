@@ -145,8 +145,8 @@ func (v *Vm) ConnectPort(port *Port, exsist bool) error {
 }
 
 func (v *Vm) DisconnectPort(port *Port) error {
-	path := fmt.Sprintf("v1/port/%s/desconnect", port.ID)
-	err := v.manager.Request("PATCH", path, Defaults(), &port)
+	path := fmt.Sprintf("v1/port/%s/disconnect", port.ID)
+	err := v.manager.Request("PATCH", path, nil, nil)
 	if err != nil {
 		return err
 	}

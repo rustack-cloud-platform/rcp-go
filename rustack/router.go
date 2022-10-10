@@ -104,7 +104,7 @@ func (r *Router) ConnectPort(port *Port, exsist bool) error {
 }
 
 func (r *Router) DisconnectPort(port *Port) error {
-	path := fmt.Sprintf("v1/port/%s/desconnect", port.ID)
+	path := fmt.Sprintf("v1/port/%s/disconnect", port.ID)
 	err := r.manager.Request("PATCH", path, Defaults(), &port)
 	if err != nil {
 		return err
