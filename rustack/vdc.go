@@ -94,13 +94,12 @@ func (v *Vdc) CreateNetwork(network *Network) error {
 
 func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 	type TempPortCreate struct {
-		Network   string  `json:"network"`
-		IpAddress *string `json:"ip_address,omitempty"`
+		ID string `json:"id"`
 	}
 
 	tempPorts := make([]*TempPortCreate, len(ports))
 	for idx := range ports {
-		tempPorts[idx] = &TempPortCreate{Network: ports[idx].Network.ID, IpAddress: ports[idx].IpAddress}
+		tempPorts[idx] = &TempPortCreate{ID: ports[idx].ID}
 	}
 
 	args := &struct {
@@ -133,18 +132,12 @@ func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 
 func (v *Vdc) CreateVm(vm *Vm) error {
 	type TempPortCreate struct {
-		Network     string    `json:"network"`
-		IpAddress   *string   `json:"ip_address,omitempty"`
-		FwTemplates []*string `json:"fw_templates"`
+		ID string `json:"id"`
 	}
 
 	tempPorts := make([]*TempPortCreate, len(vm.Ports))
 	for idx := range vm.Ports {
-		var fwTemplates = make([]*string, 0)
-		for _, fwTemplate := range vm.Ports[idx].FirewallTemplates {
-			fwTemplates = append(fwTemplates, &fwTemplate.ID)
-		}
-		tempPorts[idx] = &TempPortCreate{Network: vm.Ports[idx].Network.ID, IpAddress: vm.Ports[idx].IpAddress, FwTemplates: fwTemplates}
+		tempPorts[idx] = &TempPortCreate{ID: vm.Ports[idx].ID}
 	}
 
 	type TempFields struct {
