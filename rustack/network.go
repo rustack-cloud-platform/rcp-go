@@ -71,7 +71,7 @@ func (n *Network) CreateSubnet(subnet *Subnet) error {
 }
 
 func (n *Network) Rename(name string) error {
-	path := fmt.Sprintf("v1/network/%s", n.ID)
+	path, _ := url.JoinPath("v1/network", n.ID)
 	return n.manager.Request("Put", path, Arguments{"name": name}, n)
 }
 
