@@ -46,7 +46,7 @@ func (v *Vdc) GetNetworks(extraArgs ...Arguments) (networks []*Network, err erro
 }
 
 func (m *Manager) GetNetwork(id string) (network *Network, err error) {
-	path := fmt.Sprintf("v1/network/%s", id)
+	path, _ := url.JoinPath("v1/network", id)
 	err = m.Get(path, Defaults(), &network)
 	if err != nil {
 		return
@@ -71,7 +71,7 @@ func (n *Network) CreateSubnet(subnet *Subnet) error {
 }
 
 func (n *Network) Rename(name string) error {
-	path := fmt.Sprintf("v1/network/%s", n.ID)
+	path, _ := url.JoinPath("v1/network", n.ID)
 	return n.manager.Request("Put", path, Arguments{"name": name}, n)
 }
 
