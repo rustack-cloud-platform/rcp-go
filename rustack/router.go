@@ -124,6 +124,11 @@ func (r *Router) Delete() error {
 	return r.manager.Delete(path, Defaults(), r)
 }
 
+func (r *Router) Rename(name string) error {
+	path, _ := url.JoinPath("v1/router", r.ID)
+	return r.manager.Request("PUT", path, Arguments{"name": name}, r.ID)
+}
+
 func (r *Router) Update() error {
 	args := &struct {
 		ID        string `json:"id"`

@@ -185,8 +185,11 @@ func (v *Vm) Update() error {
 			args.Floating = v.Floating.IpAddress
 		}
 	}
-
-	return v.manager.Request("PUT", path, args, v)
+	err := v.manager.Request("PUT", path, args, v)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (v *Vm) updateState(state string) error {

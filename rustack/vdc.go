@@ -235,15 +235,21 @@ func (v *Vdc) CreateDisk(disk *Disk) error {
 }
 
 func (v *Vdc) CreateEmptyPort(port *Port) (err error) {
+	var fwTemplates = make([]*string, 0)
+	for _, fwTemplate := range port.FirewallTemplates {
+		fwTemplates = append(fwTemplates, &fwTemplate.ID)
+	}
 	args := &struct {
-		manager   *Manager
-		ID        string  `json:"id"`
-		IpAddress *string `json:"ip_address,omitempty"`
-		Network   string  `json:"network"`
+		manager     *Manager
+		ID          string    `json:"id"`
+		IpAddress   *string   `json:"ip_address,omitempty"`
+		Network     string    `json:"network"`
+		FwTemplates []*string `json:"fw_templates"`
 	}{
-		ID:        port.ID,
-		IpAddress: port.IpAddress,
-		Network:   port.Network.ID,
+		ID:          port.ID,
+		IpAddress:   port.IpAddress,
+		Network:     port.Network.ID,
+		FwTemplates: fwTemplates,
 	}
 
 	err = v.manager.Request("POST", "v1/port", args, &port)
