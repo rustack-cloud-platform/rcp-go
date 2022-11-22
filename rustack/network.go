@@ -72,7 +72,7 @@ func (n *Network) CreateSubnet(subnet *Subnet) error {
 
 func (n *Network) Rename(name string) error {
 	path, _ := url.JoinPath("v1/network", n.ID)
-	return n.manager.Request("Put", path, Arguments{"name": name}, n)
+	return n.manager.Request("PUT", path, Arguments{"name": name}, n)
 }
 
 func (n *Network) GetSubnets() (subnets []*Subnet, err error) {

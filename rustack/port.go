@@ -59,7 +59,7 @@ func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
 		SecurityRules: []string{},
 	}
 
-	err := p.manager.Request("PUT", path, args, nil)
+	err := p.manager.Request("PUT", path, args, p)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (p *Port) UpdateIpAddress(ip_address *string) error {
 		IpAddress: ip_address,
 	}
 
-	err := p.manager.Request("PUT", path, args, nil)
+	err := p.manager.Request("PUT", path, args, p)
 	if err != nil {
 		return err
 	}
