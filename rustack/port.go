@@ -115,9 +115,6 @@ func (r *Router) CreatePort(port *Port, toConnect interface{}) (err error) {
 		args.Router = v.ID
 	case *Vm:
 		args.Vm = v.ID
-		// TODO: Create lbaas
-		// case Lbaas:
-		// 	args.Lbaas = toConnect.(Lbaas).ID
 	default:
 		return fmt.Errorf("ERROR. Unknown type: %s", v)
 	}

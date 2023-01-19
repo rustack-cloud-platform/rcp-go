@@ -253,10 +253,54 @@ func (v *Vdc) CreateEmptyPort(port *Port) (err error) {
 	}
 
 	err = v.manager.Request("POST", "v1/port", args, &port)
+	if err == nil {
+		port.manager = v.manager
+	}
+
 	return
 }
 
 func (v Vdc) WaitLock() (err error) {
 	path, _ := url.JoinPath("v1/vdc", v.ID)
 	return loopWaitLock(v.manager, path)
+}
+
+
+func (v Vdc) Create(lb *LoadBalancer) (err error) {
+	type customPort struct {
+		ID                string     `json:"id"`
+		IpAddress         *string    `json:"ip_address,omitempty"`
+		Network           string     `json:"network"`
+		FirewallTemplates *string    `json:"fw_templates,omitempty"`
+		Connected         *Connected `json:"connected"`
+	}
+	lbCreate := &struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+		Vdc  string `json:"vdc"`
+
+		Kubernetes *Kubernetes `json:"kubernetes"`
+		Port       customPort  `json:"port"`
+		Floating   *string      `json:"floating"`
+	}{
+		Name: lb.Name,
+		Vdc:  lb.Vdc.ID,
+		Port: customPort{
+			ID:                lb.Port.ID,
+			IpAddress:         lb.Port.IpAddress,
+			Network:           lb.Port.Network.ID,
+			FirewallTemplates: nil,
+			Connected:         lb.Port.Connected,
+		},
+		Kubernetes: lb.Kubernetes,
+		Floating:   nil,
+	}
+	if lb.Floating != nil {
+		lbCreate.Floating = lb.Floating.IpAddress
+	}
+	err = lb.manager.Request("POST", "v1/lbaas", lbCreate, &lb)
+	if err == nil {
+		lb.manager = v.manager
+	}
+	return
 }
