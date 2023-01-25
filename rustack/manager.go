@@ -21,11 +21,18 @@ const TaskTimeout = 600  // seconds
 
 type Manager struct {
 	Client    *http.Client
+	ClientID  string
 	Logger    logger
 	BaseURL   string
 	Token     string
 	UserAgent string
 	ctx       context.Context
+}
+
+type ObjectLocked struct {
+	Details        []interface{} `json:"details"`
+	ErrorAlias     []interface{} `json:"error_alias"`
+	NonFieldErrors []interface{} `json:"non_field_errors"`
 }
 
 type Task struct {
@@ -252,8 +259,10 @@ func (m *Manager) sleep(dur time.Duration) error {
 	return nil
 }
 
+// TODO: добавить 10 минут таймаута
 func (m *Manager) do(req *http.Request, url string, target interface{}, requestBody []byte) (string, error) {
 	req.Header.Set("Accept-Language", "ru-ru")
+	var locked_object ObjectLocked
 
 	start := time.Now()
 	var resp *http.Response
@@ -272,12 +281,23 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 		if resp_.StatusCode == 409 {
 			m.log("[rustack] Object '%s' locked. Try again in %dms...", url, RetryTime)
 			body, err := ioutil.ReadAll(resp_.Body)
+			err = json.Unmarshal(body, &locked_object)
+
+
 			if err != nil {
 				return "", errors.Wrapf(err, "HTTP Read error on response for %s", url)
 			}
-			if strings.Contains(string(body), "limittype") {
-				return "", errors.New(string(body))
+			
+			if locked_object.ErrorAlias != nil {
+				error_alias := fmt.Sprintf("%v", locked_object.ErrorAlias[0])
+				error_details, _ := json.Marshal(locked_object.Details)
+				error_data := fmt.Sprintf("%v", locked_object.NonFieldErrors[0])
+				if error_alias == "limit_exceeded" || error_alias == "object_protected" {
+					error_body := fmt.Sprintf("%s: %s", error_data, string(error_details))
+					return "", errors.New(error_body)
+				}
 			}
+
 			if err := m.sleep(RetryTime * time.Millisecond); err != nil {
 				return "", err
 			}

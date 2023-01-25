@@ -17,6 +17,54 @@ type FirewallRule struct {
 	Locked          bool   `json:"locked"`
 }
 
+func NewFirewallRule(name string, destinationIp string, direction string, protocol string, dstPortRangeMax int, dstPortRangeMin int) (firewallRule FirewallRule) {
+	d := FirewallRule{
+		Name:            name,
+		DestinationIp:   destinationIp,
+		Direction:       direction,
+		DstPortRangeMax: &dstPortRangeMax,
+		DstPortRangeMin: &dstPortRangeMin,
+		Protocol:        protocol,
+	}
+	return d
+}
+
+
+func (f *FirewallTemplate) CreateFirewallRule(firewallRule *FirewallRule) (err error) {
+	args := &struct {
+		manager         *Manager
+		ID              string `json:"id"`
+		Name            string `json:"name"`
+		DestinationIp   string `json:"destination_ip"`
+		Direction       string `json:"direction"`
+		DstPortRangeMax *int   `json:"dst_port_range_max"`
+		DstPortRangeMin *int   `json:"dst_port_range_min"`
+		Protocol        string `json:"protocol"`
+	}{
+		ID:              firewallRule.ID,
+		Name:            firewallRule.Name,
+		DestinationIp:   firewallRule.DestinationIp,
+		Direction:       firewallRule.Direction,
+		DstPortRangeMax: nil,
+		DstPortRangeMin: nil,
+		Protocol:        firewallRule.Protocol,
+	}
+
+	if firewallRule.Protocol == "tcp" || firewallRule.Protocol == "udp" {
+		args.DstPortRangeMax = firewallRule.DstPortRangeMax
+		args.DstPortRangeMin = firewallRule.DstPortRangeMin
+	}
+
+	path := fmt.Sprintf("v1/firewall/%s/rule", f.ID)
+	err = f.manager.Request("POST", path, args, &firewallRule)
+	if err != nil {
+		return err
+	}
+	firewallRule.manager = f.manager
+	firewallRule.TemplateId = f.ID
+	return
+}
+
 func (f *FirewallTemplate) GetRuleById(firewallRuleId string) (firewallRule *FirewallRule, err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.ID, firewallRuleId)
 	err = f.manager.Get(path, Defaults(), &firewallRule)
@@ -37,18 +85,6 @@ func (m *Manager) GetFirewallRules(id string) (firewallRules []*FirewallRule, er
 	return
 }
 
-func NewFirewallRule(name, destinationIp, direction, protocol string,
-	dstPortRangeMax, dstPortRangeMin int) (firewallRule FirewallRule) {
-	d := FirewallRule{
-		Name:            name,
-		DestinationIp:   destinationIp,
-		Direction:       direction,
-		DstPortRangeMax: &dstPortRangeMax,
-		DstPortRangeMin: &dstPortRangeMin,
-		Protocol:        protocol,
-	}
-	return d
-}
 
 func (f *FirewallRule) Update() (err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.TemplateId, f.ID)
@@ -58,15 +94,6 @@ func (f *FirewallRule) Update() (err error) {
 func (f *FirewallRule) Delete() (err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.TemplateId, f.ID)
 	return f.manager.Delete(path, Defaults(), &f)
-}
-
-func (f *FirewallTemplate) CreateFirewallRule(firewallRule *FirewallRule) (err error) {
-	path := fmt.Sprintf("v1/firewall/%s/rule", f.ID)
-
-	err = f.manager.Request("POST", path, firewallRule, &firewallRule)
-	firewallRule.manager = f.manager
-
-	return
 }
 
 func (f FirewallRule) WaitLock() (err error) {
