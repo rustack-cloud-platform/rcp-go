@@ -86,12 +86,12 @@ func (p *Port) UpdateIpAddress(ip_address *string) error {
 
 func (p *Port) Delete() error {
 	path, _ := url.JoinPath("v1/port", p.ID)
-	return p.manager.Delete(path, Defaults(), p)
+	return p.manager.Delete(path, Defaults(), nil)
 }
 
 func (p *Port) ForceDelete() error {
 	path := fmt.Sprintf("v1/port/%s/force", p.ID)
-	return p.manager.Delete(path, Defaults(), p)
+	return p.manager.Delete(path, Defaults(), nil)
 }
 
 func (r *Router) CreatePort(port *Port, toConnect interface{}) (err error) {

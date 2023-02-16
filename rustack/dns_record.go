@@ -147,5 +147,5 @@ func (d *DnsRecord) Update() error {
 
 func (d *DnsRecord) Delete() error {
 	path := fmt.Sprintf("v1/dns/%s/record/%s", d.DnsZone, d.ID)
-	return d.manager.Delete(path, Defaults(), d)
+	return d.manager.Delete(path, Defaults(), nil)
 }

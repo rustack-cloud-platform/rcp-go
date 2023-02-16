@@ -75,7 +75,7 @@ func (v *Vdc) Rename(name string) error {
 
 func (v *Vdc) Delete() error {
 	path, _ := url.JoinPath("v1/vdc", v.ID)
-	return v.manager.Delete(path, Defaults(), v)
+	return v.manager.Delete(path, Defaults(), nil)
 }
 
 func (v *Vdc) CreateNetwork(network *Network) error {

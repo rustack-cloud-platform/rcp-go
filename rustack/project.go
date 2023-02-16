@@ -62,7 +62,7 @@ func (p *Project) Rename(name string) error {
 
 func (p *Project) Delete() error {
 	path, _ := url.JoinPath("v1/project", p.ID)
-	return p.manager.Delete(path, Defaults(), p)
+	return p.manager.Delete(path, Defaults(), nil)
 }
 
 func (p Project) WaitLock() (err error) {

@@ -218,7 +218,7 @@ func (v *Vm) PowerOff() error {
 
 func (v *Vm) Delete() error {
 	path, _ := url.JoinPath("v1/vm", v.ID)
-	return v.manager.Delete(path, Defaults(), v)
+	return v.manager.Delete(path, Defaults(), nil)
 }
 
 func (v Vm) WaitLock() (err error) {

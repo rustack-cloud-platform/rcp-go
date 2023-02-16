@@ -68,5 +68,5 @@ func (p *Project) CreateDns(dns *Dns) (err error) {
 
 func (d *Dns) Delete() error {
 	path, _ := url.JoinPath("v1/dns", d.ID)
-	return d.manager.Delete(path, Defaults(), d)
+	return d.manager.Delete(path, Defaults(), nil)
 }

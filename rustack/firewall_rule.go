@@ -93,7 +93,7 @@ func (f *FirewallRule) Update() (err error) {
 
 func (f *FirewallRule) Delete() (err error) {
 	path := fmt.Sprintf("v1/firewall/%s/rule/%s", f.TemplateId, f.ID)
-	return f.manager.Delete(path, Defaults(), &f)
+	return f.manager.Delete(path, Defaults(), nil)
 }
 
 func (f FirewallRule) WaitLock() (err error) {

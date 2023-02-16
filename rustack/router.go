@@ -121,7 +121,7 @@ func (r *Router) DisconnectPort(port *Port) error {
 
 func (r *Router) Delete() error {
 	path, _ := url.JoinPath("v1/router", r.ID)
-	return r.manager.Delete(path, Defaults(), r)
+	return r.manager.Delete(path, Defaults(), nil)
 }
 
 func (r *Router) Rename(name string) error {

@@ -122,7 +122,7 @@ func (d *Disk) UpdateStorageProfile(storageProfile StorageProfile) error {
 
 func (d *Disk) Delete() error {
 	path, _ := url.JoinPath("v1/disk", d.ID)
-	return d.manager.Delete(path, Defaults(), d)
+	return d.manager.Delete(path, Defaults(), nil)
 }
 
 func (d Disk) WaitLock() (err error) {
