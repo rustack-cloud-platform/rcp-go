@@ -117,8 +117,8 @@ func (lb *LoadBalancer) Update() (err error) {
 
 func (lb *LoadBalancer) Delete() (err error) {
 	path, _ := url.JoinPath("v1/lbaas", lb.ID)
-	err = lb.manager.Delete(path, Defaults(), lb)
-	return
+	return lb.manager.Delete(path, Defaults(), nil)
+	
 }
 
 func NewLoadBalancerPool(lb LoadBalancer, port int, connlimit int, members []*PoolMember, method string, protocol string, session_persistence string) LoadBalancerPool {

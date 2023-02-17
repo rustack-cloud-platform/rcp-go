@@ -53,7 +53,7 @@ func (f *FirewallTemplate) Update(firewallRule *FirewallRule) (err error) {
 
 func (f *FirewallTemplate) Delete() (err error) {
 	path, _ := url.JoinPath("v1/firewall", f.ID)
-	return f.manager.Delete(path, Defaults(), &f)
+	return f.manager.Delete(path, Defaults(), nil)
 }
 
 func (f *FirewallTemplate) Rename(name string) (err error) {

@@ -94,7 +94,7 @@ func (s3 *S3Storage) Update() (err error) {
 
 func (s3 *S3Storage) Delete() (err error) {
 	path, _ := url.JoinPath("v1/s3_storage", s3.ID)
-	err = s3.manager.Delete(path, Defaults(), s3)
+	err = s3.manager.Delete(path, Defaults(), nil)
 	return
 }
 
@@ -164,7 +164,7 @@ func (b *S3StorageBucket) Update() (err error) {
 
 func (b *S3StorageBucket) Delete() (err error) {
 	path := fmt.Sprintf("v1/s3_storage/%s/bucket/%s", b.S3StorageId, b.ID)
-	err = b.manager.Delete(path, Defaults(), b)
+	err = b.manager.Delete(path, Defaults(), nil)
 	return
 }
 

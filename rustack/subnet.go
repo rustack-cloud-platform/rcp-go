@@ -51,7 +51,7 @@ func NewSubnetRoute(cidr string, gateway string, metric int) SubnetRoute {
 
 func (s *Subnet) Delete() error {
 	path := fmt.Sprintf("v1/network/%s/subnet/%s", s.network.ID, s.ID)
-	return s.manager.Delete(path, Defaults(), s)
+	return s.manager.Delete(path, Defaults(), nil)
 }
 
 func (s *Subnet) update() error {

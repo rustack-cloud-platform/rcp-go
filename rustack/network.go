@@ -88,7 +88,7 @@ func (n *Network) GetSubnets() (subnets []*Subnet, err error) {
 
 func (n *Network) Delete() error {
 	path, _ := url.JoinPath("v1/network", n.ID)
-	return n.manager.Delete(path, Defaults(), n)
+	return n.manager.Delete(path, Defaults(), nil)
 }
 
 func (n Network) WaitLock() (err error) {
