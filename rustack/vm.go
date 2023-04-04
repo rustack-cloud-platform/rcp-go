@@ -11,7 +11,7 @@ type Vm struct {
 	Name        string        `json:"name"`
 	Description string        `json:"description"`
 	Cpu         int           `json:"cpu"`
-	Ram         int           `json:"ram"`
+	Ram         float64       `json:"ram"`
 	Power       bool          `json:"power"`
 	Vdc         *Vdc          `json:"vdc"`
 	HotAdd      bool          `json:"hotadd_feature"`
@@ -28,7 +28,7 @@ type Vm struct {
 	} `json:"kubernetes,omitempty"`
 }
 
-func NewVm(name string, cpu, ram int, template *Template, metadata []*VmMetadata, userData *string, ports []*Port, disks []*Disk, floating *string) Vm {
+func NewVm(name string, cpu int, ram float64, template *Template, metadata []*VmMetadata, userData *string, ports []*Port, disks []*Disk, floating *string) Vm {
 	v := Vm{Name: name, Cpu: cpu, Ram: ram, Power: true, Template: template, Metadata: metadata, UserData: userData, Ports: ports, Disks: disks}
 	if floating != nil {
 		v.Floating = &Port{IpAddress: floating}
@@ -166,7 +166,7 @@ func (v *Vm) Update() error {
 		Name        string  `json:"name"`
 		Description string  `json:"description"`
 		Cpu         int     `json:"cpu"`
-		Ram         int     `json:"ram"`
+		Ram         float64 `json:"ram"`
 		HotAdd      bool    `json:"hotadd_feature"`
 		Floating    *string `json:"floating"`
 	}{

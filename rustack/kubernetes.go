@@ -21,7 +21,7 @@ type Kubernetes struct {
 	NodeCpu      int    `json:"node_cpu"`
 	NodeDiskSize int    `json:"node_disk_size"`
 
-	NodeRam            int             `json:"node_ram"`
+	NodeRam            float64         `json:"node_ram"`
 	NodeStorageProfile *StorageProfile `json:"node_storage_profile"`
 	NodesCount         int             `json:"nodes_count"`
 	Template           *Template       `json:"template"`

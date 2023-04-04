@@ -9,7 +9,7 @@ type Template struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	MinCpu  int    `json:"min_cpu"`
-	MinRam  int    `json:"min_ram"`
+	MinRam  float64    `json:"min_ram"`
 	MinHdd  int    `json:"min_hdd"`
 }
 
