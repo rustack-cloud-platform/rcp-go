@@ -164,7 +164,7 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 	args := &struct {
 		Name     string            `json:"name"`
 		Cpu      int               `json:"cpu"`
-		Ram      int               `json:"ram"`
+		Ram      float64               `json:"ram"`
 		Vdc      string            `json:"vdc"`
 		Template string            `json:"template"`
 		Ports    []*TempPortCreate `json:"ports"`
