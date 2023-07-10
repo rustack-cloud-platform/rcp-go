@@ -8,6 +8,8 @@ type PubKey struct {
 	manager     *Manager
 	ID          string `json:"id"`
 	Name        string `json:"name"`
+	Fingerprint string `json:"fingerprint"`
+	PublicKey   string `json:"public_key"`
 }
 
 func (m *Manager) GetPublicKeys(account_id string) (public_keys []*PubKey, err error) {

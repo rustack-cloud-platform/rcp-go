@@ -222,7 +222,7 @@ func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
 		Template           *string `json:"template"`
 		Floating           *string `json:"floating"`
 		UserPublicKey      string  `json:"user_public_key"`
-		NodePlatform       string  `json:"platform"`
+		NodePlatform       string  `json:"node_platform"`
 	}{
 		Name:               k.Name,
 		NodeCpu:            k.NodeCpu,
@@ -234,7 +234,7 @@ func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
 		Template:           &k.Template.ID,
 		UserPublicKey:      k.UserPublicKey,
 		Floating:           nil,
-		NodePlatform:       k.NodePlatform,
+		NodePlatform:       k.NodePlatform.ID,
 	}
 
 	if k.Floating != nil {

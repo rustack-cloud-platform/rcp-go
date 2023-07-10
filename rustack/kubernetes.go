@@ -5,6 +5,12 @@ import (
 	"net/url"
 )
 
+type NodePlatform struct {
+	manager *Manager
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+}
+
 type Kubernetes struct {
 	manager *Manager
 	ID      string `json:"id"`
@@ -18,11 +24,11 @@ type Kubernetes struct {
 		Name string `json:"name"`
 	} `json:"project"`
 
-	Floating     *Port  `json:"floating"`
-	JobId        string `json:"job_id"`
-	NodeCpu      int    `json:"node_cpu"`
-	NodeDiskSize int    `json:"node_disk_size"`
-	NodePlatform string `json:"platform"`
+	Floating     *Port     `json:"floating"`
+	JobId        string    `json:"job_id"`
+	NodeCpu      int       `json:"node_cpu"`
+	NodeDiskSize int       `json:"node_disk_size"`
+	NodePlatform *Platform `json:"node_platform"`
 
 	NodeRam            int                 `json:"node_ram"`
 	NodeStorageProfile *StorageProfile     `json:"node_storage_profile"`
@@ -35,7 +41,7 @@ type KubernetesDashBoardUrl struct {
 	DashBoardUrl *string `json:"url"`
 }
 
-func NewKubernetes(name string, nodeCpu int, nodeRam int, nodesCount int, nodeDiskSize int, floating *string, template *KubernetesTemplate, nodeStorageProfile *StorageProfile, userPublicKey string, nodePlatform string) Kubernetes {
+func NewKubernetes(name string, nodeCpu int, nodeRam int, nodesCount int, nodeDiskSize int, floating *string, template *KubernetesTemplate, nodeStorageProfile *StorageProfile, userPublicKey string, nodePlatform *Platform) Kubernetes {
 	k := Kubernetes{Name: name, NodeCpu: nodeCpu, NodeDiskSize: nodeDiskSize, NodeRam: nodeRam, NodeStorageProfile: nodeStorageProfile, NodesCount: nodesCount, Template: template, UserPublicKey: userPublicKey, NodePlatform: nodePlatform}
 	if floating != nil {
 		k.Floating = &Port{IpAddress: floating}

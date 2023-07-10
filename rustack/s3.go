@@ -13,6 +13,7 @@ type S3Storage struct {
 	ClientEndpoint string `json:"client_endpoint"`
 	AccessKey      string `json:"access_key"`
 	SecretKey      string `json:"secret_key"`
+	Backend        string `json:"backend"`
 
 	Name    string   `json:"name"`
 	Project *Project `json:"project"`
@@ -27,9 +28,10 @@ type S3StorageBucket struct {
 	Name string `json:"name"`
 }
 
-func NewS3Storage(name string) S3Storage {
+func NewS3Storage(name string, backend string) S3Storage {
 	return S3Storage{
-		Name: name,
+		Name:    name,
+		Backend: backend,
 	}
 }
 
@@ -37,9 +39,11 @@ func (p *Project) CreateS3Storage(s3 *S3Storage) (err error) {
 	args := &struct {
 		Name    string `json:"name"`
 		Project string `json:"project"`
+		Backend string `json:"backend"`
 	}{
 		Name:    s3.Name,
 		Project: p.ID,
+		Backend: s3.Backend,
 	}
 
 	path := "v1/s3_storage"
