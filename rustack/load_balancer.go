@@ -77,7 +77,7 @@ func (v *Vdc) GetLoadBalancers(extraArgs ...Arguments) (lbaasList []*LoadBalance
 	return
 }
 
-func (m *Manager) GetLoadBalancer(id string) (lbaas LoadBalancer, err error) {
+func (m *Manager) GetLoadBalancer(id string) (lbaas *LoadBalancer, err error) {
 	path, _ := url.JoinPath("v1/lbaas", id)
 	err = m.Get(path, Defaults(), &lbaas)
 	if err != nil {
