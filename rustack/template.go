@@ -6,11 +6,11 @@ import (
 
 type Template struct {
 	manager *Manager
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	MinCpu  int    `json:"min_cpu"`
-	MinRam  float64    `json:"min_ram"`
-	MinHdd  int    `json:"min_hdd"`
+	ID      string  `json:"id"`
+	Name    string  `json:"name"`
+	MinCpu  int     `json:"min_cpu"`
+	MinRam  float64 `json:"min_ram"`
+	MinHdd  int     `json:"min_hdd"`
 }
 
 func (m *Manager) GetTemplate(id string) (template *Template, err error) {

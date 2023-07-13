@@ -164,7 +164,7 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 	args := &struct {
 		Name     string            `json:"name"`
 		Cpu      int               `json:"cpu"`
-		Ram      float64               `json:"ram"`
+		Ram      float64           `json:"ram"`
 		Vdc      string            `json:"vdc"`
 		Template string            `json:"template"`
 		Ports    []*TempPortCreate `json:"ports"`
@@ -201,6 +201,53 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 		if vm.Floating != nil {
 			vm.Floating.manager = v.manager
 		}
+	}
+
+	return err
+}
+
+func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
+	type TempPortCreate struct {
+		ID string `json:"id"`
+	}
+
+	args := &struct {
+		Name               string  `json:"name"`
+		NodeCpu            int     `json:"node_cpu"`
+		NodeRam            int     `json:"node_ram"`
+		NodeDiskSize       int     `json:"node_disk_size"`
+		NodesCount         int     `json:"nodes_count"`
+		NodeStorageProfile *string `json:"node_storage_profile"`
+		Vdc                *string `json:"vdc"`
+		Template           *string `json:"template"`
+		Floating           *string `json:"floating"`
+		UserPublicKey      string  `json:"user_public_key"`
+		NodePlatform       string  `json:"platform"`
+	}{
+		Name:               k.Name,
+		NodeCpu:            k.NodeCpu,
+		NodeRam:            k.NodeRam,
+		NodeDiskSize:       k.NodeDiskSize,
+		NodesCount:         k.NodesCount,
+		NodeStorageProfile: &k.NodeStorageProfile.ID,
+		Vdc:                &v.ID,
+		Template:           &k.Template.ID,
+		UserPublicKey:      k.UserPublicKey,
+		Floating:           nil,
+		NodePlatform:       k.NodePlatform,
+	}
+
+	if k.Floating != nil {
+		args.Floating = k.Floating.IpAddress
+	}
+
+	err := v.manager.Request("POST", "/v1/kubernetes", args, &k)
+	if err == nil {
+		k.manager = v.manager
+		for idx := range k.Vms {
+			k.Vms[idx].manager = v.manager
+		}
+
 	}
 
 	return err
@@ -265,7 +312,6 @@ func (v Vdc) WaitLock() (err error) {
 	return loopWaitLock(v.manager, path)
 }
 
-
 func (v Vdc) Create(lb *LoadBalancer) (err error) {
 	type customPort struct {
 		ID                string     `json:"id"`
@@ -281,7 +327,7 @@ func (v Vdc) Create(lb *LoadBalancer) (err error) {
 
 		Kubernetes *Kubernetes `json:"kubernetes"`
 		Port       customPort  `json:"port"`
-		Floating   *string      `json:"floating"`
+		Floating   *string     `json:"floating"`
 	}{
 		Name: lb.Name,
 		Vdc:  lb.Vdc.ID,

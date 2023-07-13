@@ -8,16 +8,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"
 )
 
-const DefaultBaseURL = "https://cp.sbcloud.ru"
+const DefaultBaseURL = "https://cp.iteco.cloud"
 const RetryTime = 500    // ms
 const LockTimeout = 1200 // seconds
 const TaskTimeout = 600  // seconds
+const KubeCtlConfigURL = `/v1/kubernetes/([^/]+)/config`
 
 type Manager struct {
 	Client    *http.Client
@@ -283,11 +289,10 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 			body, err := ioutil.ReadAll(resp_.Body)
 			err = json.Unmarshal(body, &locked_object)
 
-
 			if err != nil {
 				return "", errors.Wrapf(err, "HTTP Read error on response for %s", url)
 			}
-			
+
 			if locked_object.ErrorAlias != nil {
 				error_alias := fmt.Sprintf("%v", locked_object.ErrorAlias[0])
 				error_details, _ := json.Marshal(locked_object.Details)
@@ -342,14 +347,46 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 		// Don't try to unmarshall in case target is nil
 		return taskIds, nil
 	}
-
-	err = json.Unmarshal(b, target)
-
-	if err != nil {
-		return "", errors.Wrapf(err, "JSON decode failed on %s:\n%s", url, string(b))
+	
+	// if we dowload file
+	if strings.Contains(url, "config") {
+		reg_url := fmt.Sprintf("%s%s", m.BaseURL,KubeCtlConfigURL)
+		err = CreateKubeCtlConfigFile(b, url, reg_url)
+		if err != nil {
+			return "", errors.Wrapf(err, "Error while creating config file")
+		}
+	} else {
+		err = json.Unmarshal(b, target)
+		if err != nil {
+			return "", errors.Wrapf(err, "JSON decode failed on %s:\n%s", url, string(b))
+		}
 	}
 
 	return taskIds, nil
+}
+
+func CreateKubeCtlConfigFile(b []byte, url string, reg_url string) (err error) {
+	yamlMap := make(map[interface{}]interface{})
+	err = yaml.Unmarshal(b, yamlMap)
+	if err != nil {
+		return errors.Wrapf(err, "Yaml decode failed on %s:\n%s", url, string(b))
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrapf(err, "Cannot find work directory")
+	}
+	k8s_id, err := extractIDFromURL(url, reg_url)
+	// Define the file path for saving the YAML file
+	name := fmt.Sprintf("kubectl-%s.yaml", k8s_id)
+	filePath := filepath.Join(dir, name)
+
+	// Save the decoded YAML to the file
+	err = ioutil.WriteFile(filePath, b, 0644)
+	if err != nil {
+		return errors.Wrapf(err, "Yaml save failed")
+	}
+	return nil
 }
 
 func (m *Manager) waitTasks(taskIds string) error {
@@ -365,4 +402,14 @@ func (m *Manager) waitTasks(taskIds string) error {
 	}
 
 	return nil
+}
+
+func extractIDFromURL(url string, reg string) (string, error) {
+	re := regexp.MustCompile(reg)
+	matches := re.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("No ID found in the URL")
+	}
+
+	return matches[1], nil
 }

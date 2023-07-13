@@ -69,7 +69,7 @@ func (p *Project) GetS3Storages(extraArgs ...Arguments) (s3_storages []*S3Storag
 	return
 }
 
-func (m *Manager) GetS3Storage(id string) (s3_storage S3Storage, err error) {
+func (m *Manager) GetS3Storage(id string) (s3_storage *S3Storage, err error) {
 	path, _ := url.JoinPath("v1/s3_storage", id)
 	err = m.Get(path, Defaults(), &s3_storage)
 	if err != nil {
