@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -276,7 +276,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 	for {
 		m.log("[rustack] Perform %s...", req.Method)
 
-		req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+		req.Body = io.NopCloser(bytes.NewReader(requestBody))
 		resp_, err := m.Client.Do(req)
 		if err != nil {
 			return "", errors.Wrapf(err, "HTTP request failure on %s", url)
@@ -286,7 +286,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 
 		if resp_.StatusCode == 409 {
 			m.log("[rustack] Object '%s' locked. Try again in %dms...", url, RetryTime)
-			body, err := ioutil.ReadAll(resp_.Body)
+			body, err := io.ReadAll(resp_.Body)
 			err = json.Unmarshal(body, &locked_object)
 
 			if err != nil {
@@ -328,7 +328,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 		m.log("[rustack] Success response on '%s'", url)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrapf(err, "HTTP Read error on response for %s", url)
 	}
@@ -347,10 +347,10 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 		// Don't try to unmarshall in case target is nil
 		return taskIds, nil
 	}
-	
+
 	// if we dowload file
 	if strings.Contains(url, "config") {
-		reg_url := fmt.Sprintf("%s%s", m.BaseURL,KubeCtlConfigURL)
+		reg_url := fmt.Sprintf("%s%s", m.BaseURL, KubeCtlConfigURL)
 		err = CreateKubeCtlConfigFile(b, url, reg_url)
 		if err != nil {
 			return "", errors.Wrapf(err, "Error while creating config file")
@@ -382,7 +382,7 @@ func CreateKubeCtlConfigFile(b []byte, url string, reg_url string) (err error) {
 	filePath := filepath.Join(dir, name)
 
 	// Save the decoded YAML to the file
-	err = ioutil.WriteFile(filePath, b, 0644)
+	err = os.WriteFile(filePath, b, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "Yaml save failed")
 	}
