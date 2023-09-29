@@ -51,6 +51,39 @@ func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *string) LoadBa
 	return l
 }
 
+func (lb *LoadBalancer) Create() (err error) {
+	type customPort struct {
+		ID                string     `json:"id"`
+		IpAddress         *string    `json:"ip_address,omitempty"`
+		Network           string     `json:"network"`
+		FirewallTemplates *string    `json:"fw_templates,omitempty"`
+		Connected         *Connected `json:"connected"`
+	}
+	lbCreate := &struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+		Vdc  string `json:"vdc"`
+
+		Kubernetes *Kubernetes `json:"kubernetes"`
+		Port       customPort  `json:"port"`
+		Floating   string      `json:"floating"`
+	}{
+		Name: lb.Name,
+		Vdc:  lb.Vdc.ID,
+		Port: customPort{
+			ID:                lb.Port.ID,
+			IpAddress:         lb.Port.IpAddress,
+			Network:           lb.Port.Network.ID,
+			FirewallTemplates: nil,
+			Connected:         lb.Port.Connected,
+		},
+		Kubernetes: lb.Kubernetes,
+		Floating:   lb.Floating.ID,
+	}
+	err = lb.manager.Request("POST", "v1/lbaas", lbCreate, &lb)
+	return
+}
+
 func (m *Manager) GetLoadBalancers(extraArgs ...Arguments) (lbaasList []*LoadBalancer, err error) {
 	args := Defaults()
 	args.merge(extraArgs)
@@ -118,7 +151,7 @@ func (lb *LoadBalancer) Update() (err error) {
 func (lb *LoadBalancer) Delete() (err error) {
 	path, _ := url.JoinPath("v1/lbaas", lb.ID)
 	return lb.manager.Delete(path, Defaults(), nil)
-	
+
 }
 
 func NewLoadBalancerPool(lb LoadBalancer, port int, connlimit int, members []*PoolMember, method string, protocol string, session_persistence string) LoadBalancerPool {

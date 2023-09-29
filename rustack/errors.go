@@ -2,7 +2,7 @@ package rustack
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ type RustackApiError struct {
 }
 
 func NewRustackApiError(url string, resp *http.Response) error {
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	msg := fmt.Sprintf("HTTP request failure on %s:\n%d: %s", url, resp.StatusCode, string(body))
 
 	return &RustackApiError{
