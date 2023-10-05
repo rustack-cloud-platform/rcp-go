@@ -38,7 +38,7 @@ type PoolMember struct {
 	Vm     *Vm    `json:"vm"`
 }
 
-func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *string) LoadBalancer {
+func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *Port) LoadBalancer {
 	l := LoadBalancer{
 		manager: vdc.manager,
 		Name:    name,
@@ -46,7 +46,7 @@ func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *string) LoadBa
 		Port:    port,
 	}
 	if floating != nil {
-		l.Floating = &Port{IpAddress: floating}
+		l.Floating = floating
 	}
 	return l
 }
@@ -66,7 +66,7 @@ func (lb *LoadBalancer) Create() (err error) {
 
 		Kubernetes *Kubernetes `json:"kubernetes"`
 		Port       customPort  `json:"port"`
-		Floating   string      `json:"floating"`
+		Floating   *string     `json:"floating,omitempty"`
 	}{
 		Name: lb.Name,
 		Vdc:  lb.Vdc.ID,
@@ -78,7 +78,14 @@ func (lb *LoadBalancer) Create() (err error) {
 			Connected:         lb.Port.Connected,
 		},
 		Kubernetes: lb.Kubernetes,
-		Floating:   lb.Floating.ID,
+		Floating:   nil,
+	}
+	if lb.Floating != nil {
+		if lb.Floating.ID != "" {
+			lbCreate.Floating = &lb.Floating.ID
+		} else {
+			lbCreate.Floating = lb.Floating.IpAddress
+		}
 	}
 	err = lb.manager.Request("POST", "v1/lbaas", lbCreate, &lb)
 	return
