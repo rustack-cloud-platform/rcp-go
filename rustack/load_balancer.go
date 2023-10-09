@@ -97,6 +97,9 @@ func (m *Manager) GetLoadBalancers(extraArgs ...Arguments) (lbaasList []*LoadBal
 
 	path := "v1/lbaas"
 	err = m.GetItems(path, args, &lbaasList)
+	if err != nil {
+		return
+	}
 	for i := range lbaasList {
 		lbaasList[i].manager = m
 		lbaasList[i].Port.manager = m
@@ -215,7 +218,7 @@ func (lb *LoadBalancer) CreatePool(pool *LoadBalancerPool) (err error) {
 		SessionPersistence: nil,
 	}
 
-	if *pool.SessionPersistence != "" {
+	if pool.SessionPersistence != nil && *pool.SessionPersistence != "" {
 		args.SessionPersistence = pool.SessionPersistence
 	}
 
