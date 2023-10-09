@@ -274,22 +274,25 @@ func (lb *LoadBalancer) GetLoadBalancerPool(id string) (lbaas_pool LoadBalancerP
 	return
 }
 
-func (lb *LoadBalancer) DeletePools() (err error) {
-
+func (lb *LoadBalancer) GetPools() (pools []*LoadBalancerPool, err error) {
 	path := fmt.Sprintf("v1/lbaas/%s/pool", lb.ID)
-	var pools []*LoadBalancerPool
 	err = lb.manager.GetSubItems(path, Arguments{}, &pools)
+	return pools, err
+}
+
+func (lb *LoadBalancer) DeletePools() error {
+	pools, err := lb.GetPools()
 	if err != nil {
 		return err
 	}
 	for _, pool := range pools {
-		path = fmt.Sprintf("v1/lbaas/%s/pool/%s", lb.ID, pool.ID)
-		err = lb.manager.Delete(path, Defaults(), Defaults())
+		err = lb.DeletePool(pool.ID)
 		if err != nil {
 			return err
 		}
+		lb.WaitLock()
 	}
-	return
+	return nil
 }
 
 func (lb *LoadBalancer) DeletePool(id string) (err error) {
