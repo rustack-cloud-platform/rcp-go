@@ -116,7 +116,7 @@ func (m *Manager) Get(path string, args Arguments, target interface{}) error {
 }
 
 func (m *Manager) GetItems(path string, args Arguments, target interface{}) error {
-	items := []byte{"["[0]}
+	items := []byte("[")
 
 	params := args.ToURLValues()
 
@@ -157,13 +157,13 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 		}
 
 		items = append(items, temp.Items[1:len(temp.Items)-1]...) // Cut 1st and last bytes
-		items = append(items, ","[0])                             // Add comma
+		items = append(items, ',')                                // Add comma
 
 		page++
 	}
 
 	if len(items) > 0 {
-		items = append(items[0:len(items)-1], "]"[0]) // Remove the last comma and add closed brace
+		items = append(items[0:len(items)-1], ']') // Remove the last comma and add closed brace
 	}
 
 	err := json.Unmarshal(items, target)

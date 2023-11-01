@@ -38,7 +38,7 @@ type PoolMember struct {
 	Vm     *Vm    `json:"vm"`
 }
 
-func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *string) LoadBalancer {
+func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *Port) LoadBalancer {
 	l := LoadBalancer{
 		manager: vdc.manager,
 		Name:    name,
@@ -46,7 +46,7 @@ func NewLoadBalancer(name string, vdc *Vdc, port *Port, floating *string) LoadBa
 		Port:    port,
 	}
 	if floating != nil {
-		l.Floating = &Port{IpAddress: floating}
+		l.Floating = floating
 	}
 	return l
 }
@@ -66,7 +66,7 @@ func (lb *LoadBalancer) Create() (err error) {
 
 		Kubernetes *Kubernetes `json:"kubernetes"`
 		Port       customPort  `json:"port"`
-		Floating   string      `json:"floating"`
+		Floating   *string     `json:"floating,omitempty"`
 	}{
 		Name: lb.Name,
 		Vdc:  lb.Vdc.ID,
@@ -78,7 +78,14 @@ func (lb *LoadBalancer) Create() (err error) {
 			Connected:         lb.Port.Connected,
 		},
 		Kubernetes: lb.Kubernetes,
-		Floating:   lb.Floating.ID,
+		Floating:   nil,
+	}
+	if lb.Floating != nil {
+		if lb.Floating.ID != "" {
+			lbCreate.Floating = &lb.Floating.ID
+		} else {
+			lbCreate.Floating = lb.Floating.IpAddress
+		}
 	}
 	err = lb.manager.Request("POST", "v1/lbaas", lbCreate, &lb)
 	return
@@ -90,6 +97,9 @@ func (m *Manager) GetLoadBalancers(extraArgs ...Arguments) (lbaasList []*LoadBal
 
 	path := "v1/lbaas"
 	err = m.GetItems(path, args, &lbaasList)
+	if err != nil {
+		return
+	}
 	for i := range lbaasList {
 		lbaasList[i].manager = m
 		lbaasList[i].Port.manager = m
@@ -208,7 +218,7 @@ func (lb *LoadBalancer) CreatePool(pool *LoadBalancerPool) (err error) {
 		SessionPersistence: nil,
 	}
 
-	if *pool.SessionPersistence != "" {
+	if pool.SessionPersistence != nil && *pool.SessionPersistence != "" {
 		args.SessionPersistence = pool.SessionPersistence
 	}
 
@@ -264,22 +274,25 @@ func (lb *LoadBalancer) GetLoadBalancerPool(id string) (lbaas_pool LoadBalancerP
 	return
 }
 
-func (lb *LoadBalancer) DeletePools() (err error) {
-
+func (lb *LoadBalancer) GetPools() (pools []*LoadBalancerPool, err error) {
 	path := fmt.Sprintf("v1/lbaas/%s/pool", lb.ID)
-	var pools []*LoadBalancerPool
 	err = lb.manager.GetSubItems(path, Arguments{}, &pools)
+	return pools, err
+}
+
+func (lb *LoadBalancer) DeletePools() error {
+	pools, err := lb.GetPools()
 	if err != nil {
 		return err
 	}
 	for _, pool := range pools {
-		path = fmt.Sprintf("v1/lbaas/%s/pool/%s", lb.ID, pool.ID)
-		err = lb.manager.Delete(path, Defaults(), Defaults())
+		err = lb.DeletePool(pool.ID)
 		if err != nil {
 			return err
 		}
+		lb.WaitLock()
 	}
-	return
+	return nil
 }
 
 func (lb *LoadBalancer) DeletePool(id string) (err error) {
