@@ -16,6 +16,7 @@ type Router struct {
 	Ports    []*Port `json:"ports"`
 	Floating *Port   `json:"floating"`
 	Locked   bool    `json:"locked"`
+	Tags     []Tag   `json:"tags"`
 }
 
 func NewRouter(name string, floating *string) Router {
@@ -137,14 +138,16 @@ func (r *Router) Update() error {
 		Vdc       struct {
 			Id string `json:"id"`
 		} `json:"vdc"`
-		Ports    []*Port `json:"ports"`
-		Floating *string `json:"floating"`
+		Ports    []*Port  `json:"ports"`
+		Floating *string  `json:"floating"`
+		Tags     []string `json:"tags"`
 	}{
 		ID:        r.ID,
 		Name:      r.Name,
 		IsDefault: r.IsDefault,
 		Vdc:       r.Vdc,
 		Ports:     r.Ports,
+		Tags:      convertTagsToNames(r.Tags),
 	}
 	if r.Floating == nil {
 		args.Floating = nil

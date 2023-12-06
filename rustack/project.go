@@ -11,7 +11,8 @@ type Project struct {
 	Client  struct {
 		Id string `json:"id"`
 	} `json:"client"`
-	Locked bool `json:"locked"`
+	Locked bool  `json:"locked"`
+	Tags   []Tag `json:"tags"`
 }
 
 func NewProject(name string) Project {
@@ -42,9 +43,14 @@ func (m *Manager) GetProject(id string) (project *Project, err error) {
 }
 
 func (c *Client) CreateProject(project *Project) error {
-	args := Arguments{
-		"name":   project.Name,
-		"client": c.ID,
+	args := &struct {
+		Name   string   `json:"name"`
+		Client string   `json:"client"`
+		Tags   []string `json:"tags"`
+	}{
+		Name:   project.Name,
+		Client: c.ID,
+		Tags:   convertTagsToNames(project.Tags),
 	}
 
 	err := c.manager.Request("POST", "v1/project", args, &project)
@@ -56,8 +62,22 @@ func (c *Client) CreateProject(project *Project) error {
 }
 
 func (p *Project) Rename(name string) error {
+	p.Name = name
+	return p.Update()
+}
+
+func (p *Project) Update() error {
+	args := &struct {
+		Name   string   `json:"name"`
+		Client string   `json:"client"`
+		Tags   []string `json:"tags"`
+	}{
+		Name:   p.Name,
+		Client: p.Client.Id,
+		Tags:   convertTagsToNames(p.Tags),
+	}
 	path, _ := url.JoinPath("v1/project", p.ID)
-	return p.manager.Request("PUT", path, Arguments{"name": name, "client": p.Client.Id}, p)
+	return p.manager.Request("PUT", path, args, p)
 }
 
 func (p *Project) Delete() error {

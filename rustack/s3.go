@@ -17,6 +17,7 @@ type S3Storage struct {
 
 	Name    string   `json:"name"`
 	Project *Project `json:"project"`
+	Tags    []Tag    `json:"tags"`
 }
 
 type S3StorageBucket struct {
@@ -37,13 +38,15 @@ func NewS3Storage(name string, backend string) S3Storage {
 
 func (p *Project) CreateS3Storage(s3 *S3Storage) (err error) {
 	args := &struct {
-		Name    string `json:"name"`
-		Project string `json:"project"`
-		Backend string `json:"backend"`
+		Name    string   `json:"name"`
+		Project string   `json:"project"`
+		Backend string   `json:"backend"`
+		Tags    []string `json:"tags"`
 	}{
 		Name:    s3.Name,
 		Project: p.ID,
 		Backend: s3.Backend,
+		Tags:    convertTagsToNames(s3.Tags),
 	}
 
 	path := "v1/s3_storage"
@@ -86,9 +89,11 @@ func (m *Manager) GetS3Storage(id string) (s3_storage *S3Storage, err error) {
 func (s3 *S3Storage) Update() (err error) {
 	path, _ := url.JoinPath("v1/s3_storage", s3.ID)
 	args := &struct {
-		Name string `json:"name"`
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
 	}{
 		Name: s3.Name,
+		Tags: convertTagsToNames(s3.Tags),
 	}
 
 	err = s3.manager.Request("PUT", path, args, s3)

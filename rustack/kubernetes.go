@@ -35,6 +35,7 @@ type Kubernetes struct {
 	NodesCount         int                 `json:"nodes_count"`
 	Template           *KubernetesTemplate `json:"template"`
 	UserPublicKey      string              `json:"user_public_key"`
+	Tags               []Tag               `json:"tags"`
 }
 
 type KubernetesDashBoardUrl struct {
@@ -100,14 +101,15 @@ func (k *Kubernetes) GetKubernetesConfigUrl() (err error) {
 func (k *Kubernetes) Update() error {
 	path, _ := url.JoinPath("/v1/kubernetes", k.ID)
 	args := &struct {
-		Name               string  `json:"name"`
-		Floating           *string `json:"floating"`
-		NodesCount         int     `json:"nodes_count"`
-		NodesRam           int     `json:"node_ram"`
-		NodesCpu           int     `json:"node_cpu"`
-		NodeDiskSize       int     `json:"node_disk_size"`
-		NodeStorageProfile string  `json:"node_storage_profile"`
-		UserPublicKey      string  `json:"user_public_key"`
+		Name               string   `json:"name"`
+		Floating           *string  `json:"floating"`
+		NodesCount         int      `json:"nodes_count"`
+		NodesRam           int      `json:"node_ram"`
+		NodesCpu           int      `json:"node_cpu"`
+		NodeDiskSize       int      `json:"node_disk_size"`
+		NodeStorageProfile string   `json:"node_storage_profile"`
+		UserPublicKey      string   `json:"user_public_key"`
+		Tags               []string `json:"tags"`
 	}{
 		Name:               k.Name,
 		Floating:           nil,
@@ -117,6 +119,7 @@ func (k *Kubernetes) Update() error {
 		NodeDiskSize:       k.NodeDiskSize,
 		NodeStorageProfile: k.NodeStorageProfile.ID,
 		UserPublicKey:      k.UserPublicKey,
+		Tags:               convertTagsToNames(k.Tags),
 	}
 
 	if k.Floating != nil {

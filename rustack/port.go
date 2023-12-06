@@ -13,6 +13,7 @@ type Port struct {
 	FirewallTemplates []*FirewallTemplate `json:"fw_templates,omitempty"`
 	Connected         *Connected          `json:"connected"`
 	Locked            bool                `json:"locked"`
+	Tags              []Tag               `json:"tags"`
 }
 
 type Connected struct {
@@ -44,44 +45,33 @@ func (v *Vdc) GetPorts(extraArgs ...Arguments) (ports []*Port, err error) {
 }
 
 func (p *Port) UpdateFirewall(firewallTemplates []*FirewallTemplate) error {
-	path, _ := url.JoinPath("v1/port", p.ID)
-
-	var fwTemplates = make([]*string, 0)
-	for _, fwTemplate := range firewallTemplates {
-		fwTemplates = append(fwTemplates, &fwTemplate.ID)
-	}
-
-	args := &struct {
-		FwTemplates   []*string `json:"fw_templates"`
-		SecurityRules []string  `json:"security_rules"`
-	}{
-		FwTemplates:   fwTemplates,
-		SecurityRules: []string{},
-	}
-
-	err := p.manager.Request("PUT", path, args, p)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	p.FirewallTemplates = firewallTemplates
+	return p.Update()
 }
 
 func (p *Port) UpdateIpAddress(ip_address *string) error {
+	p.IpAddress = ip_address
+	return p.Update()
+}
+
+func (p *Port) Update() error {
 	path, _ := url.JoinPath("v1/port", p.ID)
-
+	fwTemplates := make([]*string, 0)
+	for _, fwTemplate := range p.FirewallTemplates {
+		fwTemplates = append(fwTemplates, &fwTemplate.ID)
+	}
 	args := &struct {
-		IpAddress *string `json:"ip_address,omitempty"`
+		IpAddress     *string   `json:"ip_address,omitempty"`
+		FwTemplates   []*string `json:"fw_templates"`
+		SecurityRules []string  `json:"security_rules"`
+		Tags          []string  `json:"tags"`
 	}{
-		IpAddress: ip_address,
+		IpAddress:     p.IpAddress,
+		FwTemplates:   fwTemplates,
+		SecurityRules: []string{},
+		Tags:          convertTagsToNames(p.Tags),
 	}
-
-	err := p.manager.Request("PUT", path, args, p)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return p.manager.Request("PUT", path, args, p)
 }
 
 func (p *Port) Delete() error {

@@ -22,6 +22,7 @@ type Vm struct {
 	Disks       []*Disk       `json:"disks"`
 	Floating    *Port         `json:"floating"`
 	Locked      bool          `json:"locked,omitempty"`
+	Tags        []Tag         `json:"tags"`
 	Kubernetes  *struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -163,12 +164,13 @@ func (v *Vm) DisconnectPort(port *Port) error {
 func (v *Vm) Update() error {
 	path, _ := url.JoinPath("v1/vm", v.ID)
 	args := &struct {
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Cpu         int     `json:"cpu"`
-		Ram         float64 `json:"ram"`
-		HotAdd      bool    `json:"hotadd_feature"`
-		Floating    *string `json:"floating"`
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Cpu         int      `json:"cpu"`
+		Ram         float64  `json:"ram"`
+		HotAdd      bool     `json:"hotadd_feature"`
+		Floating    *string  `json:"floating"`
+		Tags        []string `json:"tags"`
 	}{
 		Name:        v.Name,
 		Description: v.Description,
@@ -176,6 +178,7 @@ func (v *Vm) Update() error {
 		Ram:         v.Ram,
 		HotAdd:      v.HotAdd,
 		Floating:    nil,
+		Tags:        convertTagsToNames(v.Tags),
 	}
 
 	if v.Floating != nil {
