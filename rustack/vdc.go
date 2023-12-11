@@ -15,6 +15,7 @@ type Vdc struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"project"`
+	Tags []Tag `json:"tags"`
 }
 
 func NewVdc(name string, hypervisor *Hypervisor) Vdc {
@@ -54,10 +55,16 @@ func (m *Manager) GetVdc(id string) (vdc *Vdc, err error) {
 }
 
 func (p *Project) CreateVdc(vdc *Vdc) error {
-	args := Arguments{
-		"name":       vdc.Name,
-		"hypervisor": vdc.Hypervisor.ID,
-		"project":    p.ID,
+	args := &struct {
+		Name       string   `json:"name"`
+		Hypervisor string   `json:"hypervisor"`
+		Project    string   `json:"project"`
+		Tags       []string `json:"tags"`
+	}{
+		Name:       vdc.Name,
+		Hypervisor: vdc.Hypervisor.ID,
+		Project:    p.ID,
+		Tags:       convertTagsToNames(vdc.Tags),
 	}
 
 	err := p.manager.Request("POST", "v1/vdc", args, &vdc)
@@ -69,8 +76,20 @@ func (p *Project) CreateVdc(vdc *Vdc) error {
 }
 
 func (v *Vdc) Rename(name string) error {
+	v.Name = name
+	return v.Update()
+}
+
+func (v *Vdc) Update() error {
+	args := &struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}{
+		Name: v.Name,
+		Tags: convertTagsToNames(v.Tags),
+	}
 	path, _ := url.JoinPath("v1/vdc", v.ID)
-	return v.manager.Request("PUT", path, Arguments{"name": name}, v)
+	return v.manager.Request("PUT", path, args, v)
 }
 
 func (v *Vdc) Delete() error {
@@ -79,9 +98,14 @@ func (v *Vdc) Delete() error {
 }
 
 func (v *Vdc) CreateNetwork(network *Network) error {
-	args := Arguments{
-		"name": network.Name,
-		"vdc":  v.ID,
+	args := &struct {
+		Name string   `json:"name"`
+		Vdc  string   `json:"vdc"`
+		Tags []string `json:"tags"`
+	}{
+		Name: network.Name,
+		Vdc:  v.ID,
+		Tags: convertTagsToNames(network.Tags),
 	}
 
 	err := v.manager.Request("POST", "v1/network", args, &network)
@@ -107,11 +131,13 @@ func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 		Vdc      string            `json:"vdc"`
 		Ports    []*TempPortCreate `json:"ports"`
 		Floating *string           `json:"floating"`
+		Tags     []string          `json:"tags"`
 	}{
 		Name:     router.Name,
 		Vdc:      v.ID,
 		Ports:    tempPorts,
 		Floating: nil,
+		Tags:     convertTagsToNames(router.Tags),
 	}
 
 	if router.Floating != nil {
@@ -172,6 +198,7 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 		UserData *string           `json:"user_data,omitempty"`
 		Disks    []*TempDisk       `json:"disks"`
 		Floating *string           `json:"floating"`
+		Tags     []string          `json:"tags"`
 	}{
 		Name:     vm.Name,
 		Cpu:      vm.Cpu,
@@ -183,10 +210,15 @@ func (v *Vdc) CreateVm(vm *Vm) error {
 		UserData: vm.UserData,
 		Disks:    tempDisks,
 		Floating: nil,
+		Tags:     convertTagsToNames(vm.Tags),
 	}
 
 	if vm.Floating != nil {
-		args.Floating = vm.Floating.IpAddress
+		if vm.Floating.ID != "" {
+			args.Floating = &vm.Floating.ID
+		} else {
+			args.Floating = vm.Floating.IpAddress
+		}
 	}
 
 	err := v.manager.Request("POST", "v1/vm", args, &vm)
@@ -212,17 +244,18 @@ func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
 	}
 
 	args := &struct {
-		Name               string  `json:"name"`
-		NodeCpu            int     `json:"node_cpu"`
-		NodeRam            int     `json:"node_ram"`
-		NodeDiskSize       int     `json:"node_disk_size"`
-		NodesCount         int     `json:"nodes_count"`
-		NodeStorageProfile *string `json:"node_storage_profile"`
-		Vdc                *string `json:"vdc"`
-		Template           *string `json:"template"`
-		Floating           *string `json:"floating"`
-		UserPublicKey      string  `json:"user_public_key"`
-		NodePlatform       string  `json:"node_platform"`
+		Name               string   `json:"name"`
+		NodeCpu            int      `json:"node_cpu"`
+		NodeRam            int      `json:"node_ram"`
+		NodeDiskSize       int      `json:"node_disk_size"`
+		NodesCount         int      `json:"nodes_count"`
+		NodeStorageProfile *string  `json:"node_storage_profile"`
+		Vdc                *string  `json:"vdc"`
+		Template           *string  `json:"template"`
+		Floating           *string  `json:"floating"`
+		UserPublicKey      string   `json:"user_public_key"`
+		NodePlatform       string   `json:"node_platform"`
+		Tags               []string `json:"tags"`
 	}{
 		Name:               k.Name,
 		NodeCpu:            k.NodeCpu,
@@ -235,6 +268,7 @@ func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
 		UserPublicKey:      k.UserPublicKey,
 		Floating:           nil,
 		NodePlatform:       k.NodePlatform.ID,
+		Tags:               convertTagsToNames(k.Tags),
 	}
 
 	if k.Floating != nil {
@@ -255,17 +289,19 @@ func (v *Vdc) CreateKubernetes(k *Kubernetes) error {
 
 func (v *Vdc) CreateDisk(disk *Disk) error {
 	args := &struct {
-		Name           string  `json:"name"`
-		Vdc            *string `json:"vdc,omitempty"`
-		Vm             *string `json:"vm,omitempty"`
-		Size           int     `json:"size"`
-		StorageProfile string  `json:"storage_profile"`
+		Name           string   `json:"name"`
+		Vdc            *string  `json:"vdc,omitempty"`
+		Vm             *string  `json:"vm,omitempty"`
+		Size           int      `json:"size"`
+		StorageProfile string   `json:"storage_profile"`
+		Tags           []string `json:"tags"`
 	}{
 		Name:           disk.Name,
 		Vdc:            &v.ID,
 		Vm:             nil,
 		Size:           disk.Size,
 		StorageProfile: disk.StorageProfile.ID,
+		Tags:           convertTagsToNames(disk.Tags),
 	}
 
 	if disk.Vm != nil {
@@ -292,11 +328,13 @@ func (v *Vdc) CreateEmptyPort(port *Port) (err error) {
 		IpAddress   *string   `json:"ip_address,omitempty"`
 		Network     string    `json:"network"`
 		FwTemplates []*string `json:"fw_templates"`
+		Tags        []string  `json:"tags"`
 	}{
 		ID:          port.ID,
 		IpAddress:   port.IpAddress,
 		Network:     port.Network.ID,
 		FwTemplates: fwTemplates,
+		Tags:        convertTagsToNames(port.Tags),
 	}
 
 	err = v.manager.Request("POST", "v1/port", args, &port)
@@ -328,6 +366,7 @@ func (v Vdc) Create(lb *LoadBalancer) (err error) {
 		Kubernetes *Kubernetes `json:"kubernetes"`
 		Port       customPort  `json:"port"`
 		Floating   *string     `json:"floating"`
+		Tags       []string    `json:"tags"`
 	}{
 		Name: lb.Name,
 		Vdc:  lb.Vdc.ID,
@@ -340,6 +379,7 @@ func (v Vdc) Create(lb *LoadBalancer) (err error) {
 		},
 		Kubernetes: lb.Kubernetes,
 		Floating:   nil,
+		Tags:       convertTagsToNames(lb.Tags),
 	}
 	if lb.Floating != nil {
 		lbCreate.Floating = lb.Floating.IpAddress

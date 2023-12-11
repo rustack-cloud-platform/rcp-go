@@ -16,6 +16,7 @@ type LoadBalancer struct {
 	Kubernetes *Kubernetes `json:"kubernetes"`
 	Port       *Port       `json:"port"`
 	Floating   *Port       `json:"floating"`
+	Tags       []Tag       `json:"tags"`
 }
 
 type LoadBalancerPool struct {
@@ -67,6 +68,7 @@ func (lb *LoadBalancer) Create() (err error) {
 		Kubernetes *Kubernetes `json:"kubernetes"`
 		Port       customPort  `json:"port"`
 		Floating   *string     `json:"floating,omitempty"`
+		Tags       []string    `json:"tags"`
 	}{
 		Name: lb.Name,
 		Vdc:  lb.Vdc.ID,
@@ -79,6 +81,7 @@ func (lb *LoadBalancer) Create() (err error) {
 		},
 		Kubernetes: lb.Kubernetes,
 		Floating:   nil,
+		Tags:       convertTagsToNames(lb.Tags),
 	}
 	if lb.Floating != nil {
 		if lb.Floating.ID != "" {
@@ -141,9 +144,11 @@ func (lb *LoadBalancer) Update() (err error) {
 		Name     string  `json:"name"`
 		Floating *string `json:"floating"`
 		Port
+		Tags []string `json:"tags"`
 	}{
 		Name:     lb.Name,
 		Floating: nil,
+		Tags:     convertTagsToNames(lb.Tags),
 	}
 
 	if lb.Floating != nil {

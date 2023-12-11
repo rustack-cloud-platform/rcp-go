@@ -9,6 +9,7 @@ type Dns struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
 	Project *Project `json:"project"`
+	Tags    []Tag    `json:"tags"`
 }
 
 func NewDns(name string) Dns {
@@ -48,17 +49,18 @@ func (m *Manager) GetDns(id string) (dns *Dns, err error) {
 	return
 }
 
-
 func (p *Project) CreateDns(dns *Dns) (err error) {
 	args := &struct {
 		manager *Manager
-		ID      string `json:"id"`
-		Name    string `json:"name"`
-		Project string `json:"project"`
+		ID      string   `json:"id"`
+		Name    string   `json:"name"`
+		Project string   `json:"project"`
+		Tags    []string `json:"tags"`
 	}{
 		ID:      dns.ID,
 		Name:    dns.Name,
 		Project: p.ID,
+		Tags:    convertTagsToNames(dns.Tags),
 	}
 
 	err = p.manager.Request("POST", "v1/dns", args, &dns)

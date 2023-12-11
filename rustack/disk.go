@@ -14,6 +14,7 @@ type Disk struct {
 	Vm             *Vm             `json:"vm"`
 	StorageProfile *StorageProfile `json:"storage_profile"`
 	Locked         bool            `json:"locked,omitempty"`
+	Tags           []Tag           `json:"tags"`
 }
 
 func NewDisk(name string, size int, storageProfile *StorageProfile) Disk {
@@ -87,17 +88,19 @@ func (v *Vm) DetachDisk(disk *Disk) error {
 	return nil
 }
 
-func (d *Disk) Update(name string, size int, storageProfileId string) error {
+func (d *Disk) Update() error {
 	path, _ := url.JoinPath("v1/disk", d.ID)
 
 	args := &struct {
-		Name           string `json:"name"`
-		Size           int    `json:"size"`
-		StorageProfile string `json:"storage_profile"`
+		Name           string   `json:"name"`
+		Size           int      `json:"size"`
+		StorageProfile string   `json:"storage_profile"`
+		Tags           []string `json:"tags"`
 	}{
-		Name:           name,
-		Size:           size,
-		StorageProfile: storageProfileId,
+		Name:           d.Name,
+		Size:           d.Size,
+		StorageProfile: d.StorageProfile.ID,
+		Tags:           convertTagsToNames(d.Tags),
 	}
 
 	err := d.manager.Request("PUT", path, args, d)
@@ -109,15 +112,18 @@ func (d *Disk) Update(name string, size int, storageProfileId string) error {
 }
 
 func (d *Disk) Rename(name string) error {
-	return d.Update(name, d.Size, d.StorageProfile.ID)
+	d.Name = name
+	return d.Update()
 }
 
 func (d *Disk) Resize(size int) error {
-	return d.Update(d.Name, size, d.StorageProfile.ID)
+	d.Size = size
+	return d.Update()
 }
 
 func (d *Disk) UpdateStorageProfile(storageProfile StorageProfile) error {
-	return d.Update(d.Name, d.Size, storageProfile.ID)
+	d.StorageProfile = &storageProfile
+	return d.Update()
 }
 
 func (d *Disk) Delete() error {

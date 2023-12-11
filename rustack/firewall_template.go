@@ -10,6 +10,7 @@ type FirewallTemplate struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Locked  bool   `json:"locked"`
+	Tags    []Tag  `json:"tags"`
 }
 
 func (m *Manager) GetFirewallTemplate(id string) (firewallTemplate *FirewallTemplate, err error) {
@@ -57,17 +58,31 @@ func (f *FirewallTemplate) Delete() (err error) {
 }
 
 func (f *FirewallTemplate) Rename(name string) (err error) {
+	f.Name = name
+	return f.UpdateFirewallTemplate()
+}
+
+func (f *FirewallTemplate) UpdateFirewallTemplate() (err error) {
 	path, _ := url.JoinPath("v1/firewall", f.ID)
-	return f.manager.Request("PUT", path, Arguments{"name": name}, &f)
+	args := &struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}{
+		Name: f.Name,
+		Tags: convertTagsToNames(f.Tags),
+	}
+	return f.manager.Request("PUT", path, args, &f)
 }
 
 func (v *Vdc) CreateFirewallTemplate(firewallTemplate *FirewallTemplate) (err error) {
 	args := &struct {
-		Name string  `json:"name"`
-		Vdc  *string `json:"vdc,omitempty"`
+		Name string   `json:"name"`
+		Vdc  *string  `json:"vdc,omitempty"`
+		Tags []string `json:"tags"`
 	}{
 		Name: firewallTemplate.Name,
 		Vdc:  &v.ID,
+		Tags: convertTagsToNames(firewallTemplate.Tags),
 	}
 
 	err = v.manager.Request("POST", "v1/firewall", args, &firewallTemplate)

@@ -16,6 +16,7 @@ type Network struct {
 	} `json:"vdc"`
 	Locked  bool     `json:"locked"`
 	Subnets []Subnet `json:"subnets"`
+	Tags    []Tag    `json:"tags"`
 }
 
 func NewNetwork(name string) Network {
@@ -71,8 +72,20 @@ func (n *Network) CreateSubnet(subnet *Subnet) error {
 }
 
 func (n *Network) Rename(name string) error {
+	n.Name = name
+	return n.Update()
+}
+
+func (n *Network) Update() error {
+	args := &struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}{
+		Name: n.Name,
+		Tags: convertTagsToNames(n.Tags),
+	}
 	path, _ := url.JoinPath("v1/network", n.ID)
-	return n.manager.Request("PUT", path, Arguments{"name": name}, n)
+	return n.manager.Request("PUT", path, args, n)
 }
 
 func (n *Network) GetSubnets() (subnets []*Subnet, err error) {
