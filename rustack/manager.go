@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -116,7 +117,13 @@ func (m *Manager) Get(path string, args Arguments, target interface{}) error {
 }
 
 func (m *Manager) GetItems(path string, args Arguments, target interface{}) error {
-	items := []byte("[")
+	targetValue := reflect.ValueOf(target)
+	if reflect.TypeOf(target).Kind() == reflect.Pointer {
+		targetValue = targetValue.Elem()
+	}
+	if targetValue.Type().Kind() != reflect.Slice {
+		return errors.Errorf("target must be slice %d", reflect.TypeOf(target).Kind())
+	}
 
 	params := args.ToURLValues()
 
@@ -150,28 +157,19 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 		if err != nil {
 			break
 		}
-
-		lastByte := temp.Items[len(temp.Items)-1]
-		if lastByte != 93 { // Means "]"
-			return errors.New("Unmarshalling is not going well")
+		currentPageSize := min(temp.Total-temp.Limit*(page-1), temp.Limit)
+		currentItemsValue := reflect.MakeSlice(targetValue.Type(), 0, currentPageSize)
+		currentItems := currentItemsValue.Interface()
+		err = json.Unmarshal(temp.Items, &currentItems)
+		if err != nil {
+			return errors.Wrapf(err, "JSON items decode failed on %s, page %d:", path, page)
 		}
-
-		items = append(items, temp.Items[1:len(temp.Items)-1]...) // Cut 1st and last bytes
-		items = append(items, ',')                                // Add comma
-
+		targetValue.Set(reflect.AppendSlice(targetValue, currentItemsValue))
+		if targetValue.Len() == temp.Total {
+			break
+		}
 		page++
 	}
-
-	if len(items) > 0 {
-		items = append(items[0:len(items)-1], ']') // Remove the last comma and add closed brace
-	}
-
-	err := json.Unmarshal(items, target)
-
-	if err != nil {
-		return errors.Wrapf(err, "JSON items decode failed on %s:", path)
-	}
-
 	return nil
 }
 
