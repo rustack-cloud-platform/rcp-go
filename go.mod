@@ -1,4 +1,4 @@
-module github.com/pilat/rustack-go
+module github.com/rustack-cloud-platform/rcp-go
 
 go 1.21
 
