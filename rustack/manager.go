@@ -295,7 +295,7 @@ func (m *Manager) do(req *http.Request, url string, target interface{}, requestB
 				error_alias := fmt.Sprintf("%v", locked_object.ErrorAlias[0])
 				error_details, _ := json.Marshal(locked_object.Details)
 				error_data := fmt.Sprintf("%v", locked_object.NonFieldErrors[0])
-				if error_alias == "limit_exceeded" || error_alias == "object_protected" {
+				if error_alias != "object_locked" {
 					error_body := fmt.Sprintf("%s: %s", error_data, string(error_details))
 					return "", errors.New(error_body)
 				}
