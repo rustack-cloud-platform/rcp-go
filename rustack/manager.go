@@ -158,13 +158,14 @@ func (m *Manager) GetItems(path string, args Arguments, target interface{}) erro
 			break
 		}
 		currentPageSize := min(temp.Total-temp.Limit*(page-1), temp.Limit)
-		currentItemsValue := reflect.MakeSlice(targetValue.Type(), 0, currentPageSize)
+		currentItemsValue := reflect.New(targetValue.Type())
+		currentItemsValue.Elem().Set(reflect.MakeSlice(targetValue.Type(), 0, currentPageSize))
 		currentItems := currentItemsValue.Interface()
-		err = json.Unmarshal(temp.Items, &currentItems)
+		err = json.Unmarshal(temp.Items, currentItems)
 		if err != nil {
 			return errors.Wrapf(err, "JSON items decode failed on %s, page %d:", path, page)
 		}
-		targetValue.Set(reflect.AppendSlice(targetValue, currentItemsValue))
+		targetValue.Set(reflect.AppendSlice(targetValue, currentItemsValue.Elem()))
 		if targetValue.Len() == temp.Total {
 			break
 		}
