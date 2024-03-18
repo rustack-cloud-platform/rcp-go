@@ -10,6 +10,7 @@ type Disk struct {
 	ID             string          `json:"id"`
 	Name           string          `json:"name"`
 	Scsi           string          `json:"scsi"`
+	ExternalID     string          `json:"external_id"`
 	Size           int             `json:"size"`
 	Vm             *Vm             `json:"vm"`
 	StorageProfile *StorageProfile `json:"storage_profile"`
