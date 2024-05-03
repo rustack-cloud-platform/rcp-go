@@ -10,6 +10,7 @@ type Network struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	IsDefault bool   `json:"is_default"`
+	Mtu       *int   `json:"mtu,omitempty"`
 	Vdc       struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
@@ -79,9 +80,11 @@ func (n *Network) Rename(name string) error {
 func (n *Network) Update() error {
 	args := &struct {
 		Name string   `json:"name"`
+		Mtu  *int     `json:"mtu,omitempty"`
 		Tags []string `json:"tags"`
 	}{
 		Name: n.Name,
+		Mtu:  n.Mtu,
 		Tags: convertTagsToNames(n.Tags),
 	}
 	path, _ := url.JoinPath("v1/network", n.ID)
