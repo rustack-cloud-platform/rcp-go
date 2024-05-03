@@ -101,10 +101,12 @@ func (v *Vdc) CreateNetwork(network *Network) error {
 	args := &struct {
 		Name string   `json:"name"`
 		Vdc  string   `json:"vdc"`
+		Mtu  *int     `json:"mtu,omitempty"`
 		Tags []string `json:"tags"`
 	}{
 		Name: network.Name,
 		Vdc:  v.ID,
+		Mtu:  network.Mtu,
 		Tags: convertTagsToNames(network.Tags),
 	}
 
