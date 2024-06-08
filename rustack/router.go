@@ -13,10 +13,11 @@ type Router struct {
 	Vdc       struct {
 		Id string `json:"id"`
 	} `json:"vdc"`
-	Ports    []*Port `json:"ports"`
-	Floating *Port   `json:"floating"`
-	Locked   bool    `json:"locked"`
-	Tags     []Tag   `json:"tags"`
+	Ports    []*Port  `json:"ports"`
+	Routes   []*Route `json:"routes"`
+	Floating *Port    `json:"floating"`
+	Locked   bool     `json:"locked"`
+	Tags     []Tag    `json:"tags"`
 }
 
 func NewRouter(name string, floating *string) Router {
@@ -37,6 +38,9 @@ func (m *Manager) GetRouters(extraArgs ...Arguments) (routers []*Router, err err
 		routers[i].manager = m
 		for x := range routers[i].Ports {
 			routers[i].Ports[x].manager = m
+		}
+		for x := range routers[i].Routes {
+			routers[i].Routes[x].router = routers[i]
 		}
 	}
 	return
@@ -60,6 +64,9 @@ func (m *Manager) GetRouter(id string) (router *Router, err error) {
 	router.manager = m
 	for _, port := range router.Ports {
 		port.manager = m
+	}
+	for _, route := range router.Routes {
+		route.router = router
 	}
 	return
 }
@@ -139,6 +146,7 @@ func (r *Router) Update() error {
 			Id string `json:"id"`
 		} `json:"vdc"`
 		Ports    []*Port  `json:"ports"`
+		Routes   []*Route `json:"routes"`
 		Floating *string  `json:"floating"`
 		Tags     []string `json:"tags"`
 	}{
@@ -147,6 +155,7 @@ func (r *Router) Update() error {
 		IsDefault: r.IsDefault,
 		Vdc:       r.Vdc,
 		Ports:     r.Ports,
+		Routes:    r.Routes,
 		Tags:      convertTagsToNames(r.Tags),
 	}
 	if r.Floating == nil {
