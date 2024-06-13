@@ -132,12 +132,14 @@ func (v *Vdc) CreateRouter(router *Router, ports ...*Port) error {
 		Name     string            `json:"name"`
 		Vdc      string            `json:"vdc"`
 		Ports    []*TempPortCreate `json:"ports"`
+		Routes   []*Route          `json:"routes"`
 		Floating *string           `json:"floating"`
 		Tags     []string          `json:"tags"`
 	}{
 		Name:     router.Name,
 		Vdc:      v.ID,
 		Ports:    tempPorts,
+		Routes:   router.Routes,
 		Floating: nil,
 		Tags:     convertTagsToNames(router.Tags),
 	}
