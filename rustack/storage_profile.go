@@ -5,9 +5,10 @@ import (
 )
 
 type StorageProfile struct {
-	manager *Manager
-	ID      string `json:"id"`
-	Name    string `json:"name"`
+	manager     *Manager
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	MaxDiskSize int    `json:"max_disk_size"`
 }
 
 func (v *Vdc) GetStorageProfiles() (storageProfiles []*StorageProfile, err error) {
